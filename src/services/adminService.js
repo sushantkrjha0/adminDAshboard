@@ -1,7 +1,7 @@
 // src/services/adminService.js using fetch instead of axios
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api' || 'https://api.ecombuddha.ai/api';
 
-// Helper function to create consistent request options
+// Helper function to create consistent request options with CORS support
 const createRequestOptions = (method, body = null) => {
   const userUuid = localStorage.getItem('userUuid');
   
@@ -11,7 +11,8 @@ const createRequestOptions = (method, body = null) => {
       'Content-Type': 'application/json',
       'X-User-UUID': userUuid || ''
     },
-    credentials: 'include' // Include cookies if your API uses them
+    credentials: 'include', // Include cookies if your API uses them
+    mode: 'cors' // Explicitly set CORS mode
   };
   
   if (body) {
@@ -21,17 +22,77 @@ const createRequestOptions = (method, body = null) => {
   return options;
 };
 
-// Helper function to handle fetch responses
+// Helper function to handle fetch responses with better error handling
 const handleResponse = async (response) => {
-  const data = await response.json();
-  
-  // Check for error response
+  // Check if response is ok before trying to parse JSON
   if (!response.ok) {
-    const error = (data && data.message) || response.statusText;
-    return Promise.reject(error);
+    const errorText = await response.text().catch(() => 'Unknown error');
+    let errorMessage;
+    
+    try {
+      const errorData = JSON.parse(errorText);
+      errorMessage = (errorData && errorData.message) || response.statusText;
+    } catch (e) {
+      // If JSON parsing fails, use the raw text
+      errorMessage = errorText || response.statusText || `HTTP error ${response.status}`;
+    }
+    
+    return Promise.reject(errorMessage);
   }
   
-  return data;
+  // For successful responses, safely parse JSON
+  try {
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error parsing JSON response:', error);
+    return Promise.reject('Invalid response format from server');
+  }
+};
+
+// Enhanced fetch wrapper with CORS handling
+const safeFetch = async (url, options, timeout = 30000) => {
+  // Create abort controller for timeout
+  const controller = new AbortController();
+  const signal = controller.signal;
+  
+  // Add signal to options
+  const enhancedOptions = {
+    ...options,
+    signal
+  };
+  
+  // Create timeout promise
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => {
+      controller.abort();
+      reject(new Error('Request timeout - server did not respond within time limit'));
+    }, timeout);
+  });
+  
+  // Try the fetch with timeout race
+  try {
+    const response = await Promise.race([
+      fetch(url, enhancedOptions),
+      timeoutPromise
+    ]);
+    
+    return response;
+  } catch (error) {
+    // Handle network errors, CORS issues, etc.
+    if (error.name === 'AbortError') {
+      throw new Error('Request was aborted due to timeout');
+    }
+    
+    // Handle CORS errors specifically
+    if (error.message && error.message.includes('CORS')) {
+      console.error('CORS error detected:', error);
+      throw new Error(`CORS error: The server is not allowing cross-origin requests. Please check your server CORS configuration.`);
+    }
+    
+    console.error('Network error:', error);
+    throw new Error(`Network error: ${error.message || 'Failed to connect to server'}`);
+  }
 };
 
 // Track if we have a request in progress to prevent duplicate calls
@@ -46,7 +107,8 @@ const adminService = {
   // Admin login
   login: async (email, password) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, 
+      const response = await safeFetch(
+        `${API_BASE_URL}/auth/login`, 
         createRequestOptions('POST', { email, password })
       );
       
@@ -74,17 +136,21 @@ const adminService = {
       return requestsInProgress[requestKey];
     }
     
-    console.log("HY 22!!")
     // Create a new promise for this request
     const requestPromise = (async () => {
       try {
         const url = `${API_BASE_URL}/auth/credit_requests${status ? `?status=${status}` : ''}`;
-        const response = await fetch(url, createRequestOptions('GET'));
-        console.log("HY 33!!")
-        const data = await handleResponse(response);
+        console.log(`Fetching credit requests from: ${url}`);
         
-        console.log("HY 33!!")
-        console.log(data)
+        const requestOptions = createRequestOptions('GET');
+        console.log('With options:', JSON.stringify(requestOptions));
+        
+        const response = await safeFetch(url, requestOptions);
+        console.log('Response received:', response.status, response.statusText);
+        
+        const data = await handleResponse(response);
+        console.log('Data received:', data);
+        
         // Validate response structure
         if (!data || !Array.isArray(data.credit_requests)) {
           console.error('Invalid API response format:', data);
@@ -107,10 +173,9 @@ const adminService = {
         
         return { credit_requests: normalizedRequests };
       } catch (error) {
-        console.log("HY 33!!")
-        console.log(error)
         console.error('Error fetching credit requests:', error);
-        throw error;
+        // Return empty array instead of throwing to prevent UI crashes
+        return { credit_requests: [], error: error.message };
       } finally {
         // Remove from in-progress requests when done
         delete requestsInProgress[requestKey];
@@ -126,7 +191,7 @@ const adminService = {
   // Approve a credit request
   approveCreditRequest: async (userUuid, notes = '') => {
     try {
-      const response = await fetch(
+      const response = await safeFetch(
         `${API_BASE_URL}/auth/credit_requests/${userUuid}/approve`, 
         createRequestOptions('POST', { notes })
       );
@@ -140,7 +205,7 @@ const adminService = {
   // Reject a credit request
   rejectCreditRequest: async (userUuid, notes = '') => {
     try {
-      const response = await fetch(
+      const response = await safeFetch(
         `${API_BASE_URL}/auth/credit_requests/${userUuid}/reject`, 
         createRequestOptions('POST', { notes })
       );
@@ -154,7 +219,7 @@ const adminService = {
   // Get admin dashboard statistics
   getStatistics: async () => {
     try {
-      const response = await fetch(
+      const response = await safeFetch(
         `${API_BASE_URL}/auth/statistics`, 
         createRequestOptions('GET')
       );
@@ -168,7 +233,7 @@ const adminService = {
   // Get admin profile
   getProfile: async () => {
     try {
-      const response = await fetch(
+      const response = await safeFetch(
         `${API_BASE_URL}/auth/profile`, 
         createRequestOptions('GET')
       );
@@ -182,6 +247,27 @@ const adminService = {
   // Force refresh of credit requests - to be called manually after approve/reject
   forceRefreshCreditRequests: async (status = null) => {
     return adminService.getCreditRequests(status, true);
+  },
+  
+  // Check server connectivity
+  checkConnection: async () => {
+    try {
+      // Use simple fetch without JSON parsing to check connectivity
+      const response = await fetch(`${API_BASE_URL}/health`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'include'
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('Server connection check failed:', error);
+      return false;
+    }
+  },
+  
+  // Get API base URL (useful for debugging)
+  getApiBaseUrl: () => {
+    return API_BASE_URL;
   }
 };
 
