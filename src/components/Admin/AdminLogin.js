@@ -16,7 +16,7 @@ const AUTHORIZED_CREDENTIALS = {
   },
   'sushant@ecombuddha.in': {
     password: 'Sushant@123',
-    uuid: '41d34dda-4061-7054-e597-123c1efef594'
+    uuid: '71b3fd3a-f011-70ed-07f8-d327ee3c7749'
   },
   'harshita@ecombuddha.in': {
     password: 'Harshita@123',

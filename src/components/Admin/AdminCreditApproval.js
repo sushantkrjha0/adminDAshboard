@@ -17,7 +17,7 @@ const AdminCreditApproval = () => {
 
   // Function to get API URL
   const getApiUrl = () => {
-    return process.env.REACT_APP_API_URL || 'http://localhost:5000/api' || 'https://api.ecombuddha.ai/api';
+    return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
   };
 
   // Function to fetch credit requests based on tab/status

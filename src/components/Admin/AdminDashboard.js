@@ -42,7 +42,7 @@ const AdminDashboard = () => {
       
       // Use admin service to fetch credit requests
       
-      console.log("hy !!!")
+     
       const response = await adminService.getCreditRequests(activeTab !== 'all' ? activeTab : null);
       setCreditRequests(response.credit_requests || []);
     } catch (err) {
