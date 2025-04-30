@@ -1,0 +1,277 @@
+/* src/components/Credits/CreditRequestModal.module.css */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: white;
+  width: 90%;
+  max-width: 500px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+  background-color: #f8f9fa;
+}
+
+.modalTitle {
+  display: flex;
+  align-items: center;
+  font-size: 1.25rem;
+  margin: 0;
+  color: #343a40;
+}
+
+.coinIcon {
+  color: #ffc107;
+  margin-right: 0.5rem;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+}
+
+.closeButton:hover {
+  color: #343a40;
+}
+
+.modalBody {
+  padding: 1.5rem;
+}
+
+/* Loading container */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  color: #6c757d;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #007bff;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Pending request view */
+.pendingRequest {
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.pendingHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  color: #0d6efd;
+  font-weight: 500;
+}
+
+.pendingIcon {
+  margin-right: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.pendingDetails {
+  margin-bottom: 1rem;
+}
+
+.pendingDetails p {
+  margin: 0.5rem 0;
+}
+
+.pendingStatus {
+  display: inline-block;
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.pendingNote {
+  color: #6c757d;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Credit info */
+.creditInfo {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.creditInfo p {
+  margin: 0.5rem 0;
+}
+
+.creditBalance {
+  font-weight: 600;
+  color: #0d6efd;
+}
+
+.creditLimit {
+  font-weight: 600;
+  color: #6c757d;
+}
+
+.creditAvailable {
+  font-weight: 600;
+  color: #28a745;
+}
+
+/* Note info */
+.noteInfo {
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.noteInfo p {
+  display: flex;
+  align-items: flex-start;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.infoIcon {
+  margin-right: 0.5rem;
+  margin-top: 0.125rem;
+  color: #0d6efd;
+}
+
+/* Message styles */
+.errorMessage {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  border: 1px solid #f5c6cb;
+}
+
+.successMessage {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  border: 1px solid #c3e6cb;
+}
+
+/* Form styles */
+.creditForm {
+  margin-top: 1rem;
+}
+
+.inputGroup {
+  margin-bottom: 1.5rem;
+}
+
+.inputLabel {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #343a40;
+}
+
+.creditInput {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.creditInput:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  outline: none;
+}
+
+.creditInput:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+
+/* Button actions */
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.cancelButton {
+  padding: 0.5rem 1.5rem;
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  color: #495057;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: #e9ecef;
+}
+
+.submitButton {
+  padding: 0.5rem 1.5rem;
+  background-color: #007bff;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.submitButton:hover:not(:disabled) {
+  background-color: #0069d9;
+}
+
+.cancelButton:disabled,
+.submitButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
