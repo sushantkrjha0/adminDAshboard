@@ -1,8 +1,8 @@
 // src/components/Admin/AdminDashboard.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './AdminDashboard.module.css';
-import { FaCoins, FaUser, FaSignOutAlt, FaCheck, FaTimes, FaSpinner, FaSync, FaFilter } from 'react-icons/fa';
+import { FaCoins, FaUser, FaSignOutAlt, FaCheck, FaTimes, FaSpinner, FaFilter } from 'react-icons/fa';
 import adminService from '../../services/adminService';
 
 const AdminDashboard = () => {
@@ -13,34 +13,21 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('pending');
   const [processingRequestId, setProcessingRequestId] = useState(null);
   const [modalData, setModalData] = useState(null);
+  const [refreshFlag, setRefreshFlag] = useState(false); // For manual refresh control
+  const isFirstRender = useRef(true); // Track if this is the first render
   const navigate = useNavigate();
   
   // Check admin auth on load
   useEffect(() => {
-    const adminToken = localStorage.getItem('adminToken');
-    if (!adminToken) {
+    const userUuid = localStorage.getItem('userUuid');
+    if (!userUuid) {
       navigate('/admin/login');
     }
   }, [navigate]);
   
-  // Fetch credit requests on load and when tab changes
-  useEffect(() => {
-    fetchCreditRequests();
-    
-    // Set up auto-refresh every 30 seconds for pending requests
-    let intervalId;
-    if (activeTab === 'pending') {
-      intervalId = setInterval(() => {
-        fetchCreditRequests(false); // Silent refresh
-      }, 30000);
-    }
-    
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [activeTab]);
-  
-  const fetchCreditRequests = async (showLoading = true) => {
+  // Memoize fetchCreditRequests to prevent recreation on each render
+  const fetchCreditRequests = useCallback(async (showLoading = true) => {
+    console.log(`[fetchCreditRequests] called for tab: ${activeTab}`);
     if (showLoading) {
       setIsLoading(true);
     }
@@ -54,33 +41,62 @@ const AdminDashboard = () => {
       }
       
       // Use admin service to fetch credit requests
-      console.log("HY before!!")
+      
+      console.log("hy !!!")
       const response = await adminService.getCreditRequests(activeTab !== 'all' ? activeTab : null);
-      console.log("HY !!")
       setCreditRequests(response.credit_requests || []);
     } catch (err) {
-      console.error("Error fetching credit requests:", err);
+      console.error("[fetchCreditRequests] Error:", err);
       setError("Failed to fetch credit requests. Please try again later.");
     } finally {
       if (showLoading) {
         setIsLoading(false);
       }
     }
-  };
+  }, [activeTab, navigate]);
   
-  const handleApprove = async (userId) => {
-    setProcessingRequestId(userId);
+  // Effect for tab changes - handles the first load and tab changes
+  useEffect(() => {
+    // Skip the first automatic run to avoid double fetch in StrictMode
+    if (isFirstRender.current) {
+      console.log("[useEffect] First render detected, setting up delayed initial fetch");
+      isFirstRender.current = false;
+      
+      // Still fetch data on first mount, but with a small delay
+      const timer = setTimeout(() => {
+        console.log("[useEffect] Executing delayed initial fetch");
+        fetchCreditRequests(true);
+      }, 50);
+      
+      return () => clearTimeout(timer);
+    } else {
+      console.log("[useEffect] Tab changed, fetching new data");
+      fetchCreditRequests(true);
+    }
+  }, [activeTab, fetchCreditRequests]);
+  
+  // Effect for manual refresh via refreshFlag
+  useEffect(() => {
+    // Skip the initial render to avoid duplicate calls
+    if (!isFirstRender.current) {
+      console.log("[useEffect] Manual refresh triggered");
+      fetchCreditRequests(true);
+    }
+  }, [refreshFlag, fetchCreditRequests]);
+  
+  const handleApprove = async (userUuid) => {
+    setProcessingRequestId(userUuid);
     setError(null);
     setSuccessMessage(null);
     
     try {
       // Use admin service to approve the credit request
-      const response = await adminService.approveCreditRequest(userId, "Approved by admin");
+      const response = await adminService.approveCreditRequest(userUuid, "Approved by admin");
       
       setSuccessMessage(`Credit request approved successfully. New balance: ${response.new_credit_balance} credits.`);
       
-      // Refresh the list after approval
-      fetchCreditRequests();
+      // Trigger a refresh by toggling refreshFlag
+      setRefreshFlag(prev => !prev);
       
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -94,10 +110,10 @@ const AdminDashboard = () => {
     }
   };
   
-  const handleReject = async (userId) => {
+  const handleReject = async (userUuid) => {
     // Open the modal for rejection reason
     setModalData({
-      userId,
+      userUuid,
       action: 'reject',
       title: 'Reject Credit Request',
       message: 'Please provide a reason for rejecting this credit request:',
@@ -107,19 +123,19 @@ const AdminDashboard = () => {
   const handleRejectConfirm = async (notes) => {
     if (!modalData) return;
     
-    setProcessingRequestId(modalData.userId);
+    setProcessingRequestId(modalData.userUuid);
     setModalData(null);
     setError(null);
     setSuccessMessage(null);
     
     try {
       // Use admin service to reject the credit request
-      await adminService.rejectCreditRequest(modalData.userId, notes);
+      await adminService.rejectCreditRequest(modalData.userUuid, notes);
       
       setSuccessMessage("Credit request rejected successfully.");
       
-      // Refresh the list after rejection
-      fetchCreditRequests();
+      // Trigger a refresh by toggling refreshFlag
+      setRefreshFlag(prev => !prev);
       
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -134,7 +150,7 @@ const AdminDashboard = () => {
   };
   
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
+    localStorage.removeItem('userUuid');
     localStorage.removeItem('adminEmail');
     navigate('/admin/login');
   };
@@ -236,7 +252,7 @@ const AdminDashboard = () => {
               </thead>
               <tbody>
                 {creditRequests.map((request) => (
-                  <tr key={request._id} className={styles.requestRow}>
+                  <tr key={request.user_uuid} className={styles.requestRow}>
                     <td className={styles.userCell}>
                       <div className={styles.userInfo}>
                         <span className={styles.username}>{request.username}</span>
@@ -254,11 +270,11 @@ const AdminDashboard = () => {
                     {activeTab === 'pending' && (
                       <td className={styles.actionCell}>
                         <button
-                          onClick={() => handleApprove(request._id)}
+                          onClick={() => handleApprove(request.user_uuid)}
                           className={`${styles.actionButton} ${styles.approveButton}`}
-                          disabled={processingRequestId === request._id}
+                          disabled={processingRequestId === request.user_uuid}
                         >
-                          {processingRequestId === request._id ? (
+                          {processingRequestId === request.user_uuid ? (
                             <FaSpinner className={styles.spinner} />
                           ) : (
                             <FaCheck />
@@ -266,11 +282,11 @@ const AdminDashboard = () => {
                           <span>Approve</span>
                         </button>
                         <button
-                          onClick={() => handleReject(request._id)}
+                          onClick={() => handleReject(request.user_uuid)}
                           className={`${styles.actionButton} ${styles.rejectButton}`}
-                          disabled={processingRequestId === request._id}
+                          disabled={processingRequestId === request.user_uuid}
                         >
-                          {processingRequestId === request._id ? (
+                          {processingRequestId === request.user_uuid ? (
                             <FaSpinner className={styles.spinner} />
                           ) : (
                             <FaTimes />
