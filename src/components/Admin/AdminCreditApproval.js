@@ -17,7 +17,9 @@ const AdminCreditApproval = () => {
 
   // Function to get API URL
   const getApiUrl = () => {
-    return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    // Import the centralized API config
+    const { getApiBaseUrl } = require('../../utils/apiConfig');
+    return getApiBaseUrl();
   };
 
   // Function to fetch credit requests based on tab/status

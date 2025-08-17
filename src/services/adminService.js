@@ -1,5 +1,7 @@
 // src/services/adminService.js using fetch instead of axios
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { getApiBaseUrl } from '../utils/apiConfig';
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Helper function to create consistent request options with CORS support
 const createRequestOptions = (method, body = null) => {

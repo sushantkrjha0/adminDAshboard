@@ -22,8 +22,10 @@ const AUTHORIZED_USERS = {
 };
 
 // Setup API URL
+import { getApiBaseUrl } from './apiConfig';
+
 export const getApiUrl = () => {
-  return process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  return getApiBaseUrl();
 };
 
 // Setup auth headers for all requests
