@@ -1,7 +1,9 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLogin from './components/Admin/AdminLogin';
-import AdminDashboard from './components/Admin/AdminDashboard';
+import AdminLayout from './components/Admin/AdminLayout';
+import Dashboard from './components/Admin/Dashboard';
+import CreditRequests from './components/Admin/CreditRequests';
 import { setupAxiosInterceptors } from './utils/auth';
 import './App.css';
 
@@ -10,8 +12,12 @@ function App() {
     <Routes>
       {/* Admin routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/admin/dashboard" element={<AdminDashboard />} />
-      <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="credit-requests" element={<CreditRequests />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
+      </Route>
 
       {/* Default route */}
       <Route path="/" element={<Navigate to="/admin/login" replace />} />

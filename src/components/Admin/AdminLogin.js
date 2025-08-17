@@ -80,7 +80,7 @@ const AdminLogin = () => {
       axios.defaults.headers.common['X-User-UUID'] = userCredentials.uuid;
       
       // Redirect to admin dashboard
-      navigate('/admin/dashboard');
+      navigate('/admin');
     } catch (error) {
       console.error('Login error:', error);
       setError('An error occurred during login. Please try again.');
