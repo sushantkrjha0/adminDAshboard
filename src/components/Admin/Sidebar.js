@@ -62,8 +62,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: 'User Management',
       icon: <FaUsers />,
       path: '/admin/users',
-      description: 'Manage user accounts',
-      disabled: true // Placeholder for future feature
+      description: 'Manage user accounts'
     },
     {
       id: 'settings',

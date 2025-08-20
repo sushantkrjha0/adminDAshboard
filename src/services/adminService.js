@@ -245,6 +245,48 @@ const adminService = {
       throw error;
     }
   },
+
+  // Get all users for admin dashboard
+  getAllUsers: async () => {
+    try {
+      const response = await safeFetch(
+        `${API_BASE_URL}/auth/users`, 
+        createRequestOptions('GET')
+      );
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching all users:', error);
+      throw error;
+    }
+  },
+
+  // Get all referrals for admin dashboard
+  getAllReferrals: async () => {
+    try {
+      const response = await safeFetch(
+        `${API_BASE_URL}/auth/referrals`, 
+        createRequestOptions('GET')
+      );
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching all referrals:', error);
+      throw error;
+    }
+  },
+
+  // Get all feedback for admin dashboard
+  getAllFeedback: async () => {
+    try {
+      const response = await safeFetch(
+        `${API_BASE_URL}/auth/feedback`, 
+        createRequestOptions('GET')
+      );
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching all feedback:', error);
+      throw error;
+    }
+  },
   
   // Force refresh of credit requests - to be called manually after approve/reject
   forceRefreshCreditRequests: async (status = null) => {
