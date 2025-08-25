@@ -2,9 +2,11 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from './AdminLayout';
-import CreditDashboard from './CreditDashboard/CreditDashboard';
-import AdminHome from './AdminHome';
+import CreditRequests from './CreditRequests';
+import Dashboard from './Dashboard';
 import AdminGuard from './AdminGuard';
+import Feedback from './Feedback';
+import Referrals from './Referrals';
 
 const AdminRoutes = () => {
   return (
@@ -17,8 +19,11 @@ const AdminRoutes = () => {
           </AdminGuard>
         }
       >
-        <Route index element={<AdminHome />} />
-        <Route path="credit-requests" element={<CreditDashboard />} />
+        <Route index element={<Dashboard />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="credit-requests" element={<CreditRequests />} />
+        <Route path="feedback" element={<Feedback />} />
+        <Route path="referrals" element={<Referrals />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
     </Routes>

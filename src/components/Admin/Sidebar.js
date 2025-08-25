@@ -10,7 +10,9 @@ import {
   FaCreditCard,
   FaCheckCircle,
   FaTimesCircle,
-  FaClock
+  FaClock,
+  FaCommentDots,
+  FaShareAlt
 } from 'react-icons/fa';
 import styles from './Sidebar.module.css';
 
@@ -63,6 +65,20 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       icon: <FaUsers />,
       path: '/admin/users',
       description: 'Manage user accounts'
+    },
+    {
+      id: 'feedback',
+      label: 'User Feedback',
+      icon: <FaCommentDots />,
+      path: '/admin/feedback',
+      description: 'View and manage user feedback'
+    },
+    {
+      id: 'referrals',
+      label: 'User Referrals',
+      icon: <FaShareAlt />,
+      path: '/admin/referrals',
+      description: 'View and manage user referrals'
     },
     {
       id: 'settings',

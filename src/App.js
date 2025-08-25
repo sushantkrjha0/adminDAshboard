@@ -5,6 +5,8 @@ import AdminLayout from './components/Admin/AdminLayout';
 import Dashboard from './components/Admin/Dashboard';
 import CreditRequests from './components/Admin/CreditRequests';
 import UserManagement from './components/Admin/UserManagement';
+import Feedback from './components/Admin/Feedback';
+import Referrals from './components/Admin/Referrals';
 import { setupAxiosInterceptors } from './utils/auth';
 import './App.css';
 
@@ -18,6 +20,8 @@ function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="credit-requests" element={<CreditRequests />} />
         <Route path="users" element={<UserManagement />} />
+        <Route path="feedback" element={<Feedback />} />
+        <Route path="referrals" element={<Referrals />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
 

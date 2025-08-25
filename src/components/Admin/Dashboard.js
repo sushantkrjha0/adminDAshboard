@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaCoins, FaUsers, FaChartBar, FaClock, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaCoins, FaUsers, FaChartBar, FaClock, FaCheckCircle, FaTimesCircle, FaCommentDots, FaShareAlt } from 'react-icons/fa';
 import styles from './Dashboard.module.css';
 import adminService from '../../services/adminService';
 
@@ -10,7 +10,9 @@ const Dashboard = () => {
     pendingRequests: 0,
     approvedRequests: 0,
     rejectedRequests: 0,
-    totalRequests: 0
+    totalRequests: 0,
+    totalFeedback: 0,
+    totalReferrals: 0
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,15 +27,24 @@ const Dashboard = () => {
       setIsLoading(true);
       
       // Fetch credit requests to get stats
-      const response = await adminService.getCreditRequests('all');
-      const allRequests = response.credit_requests || [];
+      const [creditResponse, feedbackResponse, referralsResponse] = await Promise.all([
+        adminService.getCreditRequests('all'),
+        adminService.getAllFeedback(),
+        adminService.getAllReferrals()
+      ]);
+      
+      const allRequests = creditResponse.credit_requests || [];
+      const allFeedback = feedbackResponse.feedback || [];
+      const allReferrals = referralsResponse.referrals || [];
       
       setStats({
         totalUsers: allRequests.length > 0 ? new Set(allRequests.map(req => req.user_uuid)).size : 0,
         pendingRequests: allRequests.filter(req => req.status === 'pending').length,
         approvedRequests: allRequests.filter(req => req.status === 'approved').length,
         rejectedRequests: allRequests.filter(req => req.status === 'rejected').length,
-        totalRequests: allRequests.length
+        totalRequests: allRequests.length,
+        totalFeedback: allFeedback.length,
+        totalReferrals: allReferrals.length
       });
     } catch (err) {
       console.error("Error fetching dashboard stats:", err);
@@ -50,6 +61,12 @@ const Dashboard = () => {
         break;
       case 'users':
         navigate('/admin/users');
+        break;
+      case 'feedback':
+        navigate('/admin/feedback');
+        break;
+      case 'referrals':
+        navigate('/admin/referrals');
         break;
       case 'settings':
         navigate('/admin/settings');
@@ -111,6 +128,26 @@ const Dashboard = () => {
 
         <div className={styles.statCard}>
           <div className={styles.statIcon}>
+            <FaCommentDots />
+          </div>
+          <div className={styles.statContent}>
+            <h3>{stats.totalFeedback}</h3>
+            <p>Total Feedback</p>
+          </div>
+        </div>
+
+        <div className={styles.statCard}>
+          <div className={styles.statIcon}>
+            <FaShareAlt />
+          </div>
+          <div className={styles.statContent}>
+            <h3>{stats.totalReferrals}</h3>
+            <p>Total Referrals</p>
+          </div>
+        </div>
+
+        <div className={styles.statCard}>
+          <div className={styles.statIcon}>
             <FaClock />
           </div>
           <div className={styles.statContent}>
@@ -150,6 +187,34 @@ const Dashboard = () => {
 
           <div 
             className={styles.actionCard}
+            onClick={() => handleQuickAction('feedback')}
+          >
+            <div className={styles.actionIcon}>
+              <FaCommentDots />
+            </div>
+            <h3>User Feedback</h3>
+            <p>View and manage user feedback</p>
+            <div className={styles.actionBadge}>
+              {stats.totalFeedback} total
+            </div>
+          </div>
+
+          <div 
+            className={styles.actionCard}
+            onClick={() => handleQuickAction('referrals')}
+          >
+            <div className={styles.actionIcon}>
+              <FaShareAlt />
+            </div>
+            <h3>User Referrals</h3>
+            <p>View and manage user referrals</p>
+            <div className={styles.actionBadge}>
+              {stats.totalReferrals} total
+            </div>
+          </div>
+
+          <div 
+            className={styles.actionCard}
             onClick={() => handleQuickAction('users')}
           >
             <div className={styles.actionIcon}>
@@ -157,20 +222,6 @@ const Dashboard = () => {
             </div>
             <h3>User Management</h3>
             <p>View and manage user accounts</p>
-            <div className={styles.actionBadge}>
-              Coming Soon
-            </div>
-          </div>
-
-          <div 
-            className={styles.actionCard}
-            onClick={() => handleQuickAction('settings')}
-          >
-            <div className={styles.actionIcon}>
-              <FaChartBar />
-            </div>
-            <h3>Analytics</h3>
-            <p>View platform statistics and reports</p>
             <div className={styles.actionBadge}>
               Coming Soon
             </div>
