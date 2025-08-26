@@ -1,5 +1,6 @@
 // src/utils/auth.js
 import axios from 'axios';
+import { getApiBaseUrl } from './apiConfig';
 
 // User credentials with their UUIDs
 const AUTHORIZED_USERS = {
@@ -22,8 +23,6 @@ const AUTHORIZED_USERS = {
 };
 
 // Setup API URL
-import { getApiBaseUrl } from './apiConfig';
-
 export const getApiUrl = () => {
   return getApiBaseUrl();
 };
