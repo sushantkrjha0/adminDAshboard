@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaUsers, FaSpinner, FaSearch, FaFilter, FaEye, FaEdit, FaTrash, FaTimes, FaCalendar, FaBuilding, FaBriefcase, FaMapMarkerAlt, FaClock, FaUsers as FaUsersIcon, FaAmazon, FaCoins, FaEnvelope, FaIdCard, FaChevronDown, FaChevronRight, FaShareAlt, FaComments, FaStar, FaExclamationTriangle } from 'react-icons/fa';
+import { FaUsers, FaSpinner, FaSearch, FaFilter, FaEye, FaEdit, FaTrash, FaTimes, FaCalendar, FaBuilding, FaBriefcase, FaMapMarkerAlt, FaClock, FaUsers as FaUsersIcon, FaAmazon, FaCoins, FaEnvelope, FaIdCard, FaChevronDown, FaChevronRight, FaShareAlt, FaComments, FaStar, FaExclamationTriangle, FaPhone } from 'react-icons/fa';
 import styles from './UserManagement.module.css';
 import adminService from '../../services/adminService';
 
@@ -340,6 +340,7 @@ const UserManagement = () => {
                   </span>
                 )}
               </th>
+              <th>Phone Number</th>
               <th onClick={() => handleSort('current_credits')} className={styles.sortableHeader}>
                 Credits
                 {sortBy === 'current_credits' && (
@@ -379,6 +380,11 @@ const UserManagement = () => {
                       <span className={styles.jobTitle}>{user.job_title}</span>
                     )}
                   </div>
+                </td>
+                <td>
+                  <span className={styles.phoneNumber}>
+                    {user.phone_number}
+                  </span>
                 </td>
                 <td>
                   <span className={styles.creditBadge}>
@@ -717,6 +723,13 @@ const UserManagement = () => {
                     <span className={styles.detailValue}>
                       <FaClock className={styles.inlineIcon} />
                       {selectedUser.experience}
+                    </span>
+                  </div>
+                  <div className={styles.detailRow}>
+                    <span className={styles.detailLabel}>Phone Number:</span>
+                    <span className={styles.detailValue}>
+                      <FaPhone className={styles.inlineIcon} />
+                      {selectedUser.phone_number}
                     </span>
                   </div>
                   <div className={styles.detailRow}>
