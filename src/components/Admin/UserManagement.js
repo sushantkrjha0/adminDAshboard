@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { FaUsers, FaSpinner, FaSearch, FaFilter, FaEye, FaEdit, FaTrash, FaTimes, FaCalendar, FaBuilding, FaBriefcase, FaMapMarkerAlt, FaClock, FaUsers as FaUsersIcon, FaAmazon, FaCoins, FaEnvelope, FaIdCard, FaChevronDown, FaChevronRight, FaShareAlt, FaComments, FaStar, FaExclamationTriangle, FaPhone } from 'react-icons/fa';
+import { useSearchParams } from 'react-router-dom';
+import { FaUsers, FaSpinner, FaSearch, FaFilter, FaEye, FaEdit, FaTrash, FaTimes, FaCalendar, FaCalendarAlt, FaCalendarCheck, FaBuilding, FaBriefcase, FaMapMarkerAlt, FaClock, FaUsers as FaUsersIcon, FaAmazon, FaCoins, FaEnvelope, FaIdCard, FaChevronDown, FaChevronRight, FaShareAlt, FaComments, FaStar, FaExclamationTriangle, FaPhone } from 'react-icons/fa';
 import styles from './UserManagement.module.css';
 import adminService from '../../services/adminService';
 
 
 
 const UserManagement = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,26 +17,19 @@ const UserManagement = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
-  const [referrals, setReferrals] = useState([]);
-  const [feedback, setFeedback] = useState([]);
-  const [expandedSections, setExpandedSections] = useState({
-    referrals: true,  // Start expanded like credit requests
-    feedback: true    // Start expanded like credit requests
-  });
-  const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
-  const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
+
+  // Get view from search params, default to 'all'
+  const currentView = searchParams.get('view') || 'all';
 
   useEffect(() => {
     fetchUsers();
-    fetchReferrals();  // Fetch referrals on mount
-    fetchFeedback();   // Fetch feedback on mount
   }, []);
 
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const response = await adminService.getAllUsers();
       if (response.success) {
         setUsers(response.users || []);
@@ -49,40 +44,74 @@ const UserManagement = () => {
     }
   };
 
+  const handleViewChange = (view) => {
+    setSearchParams({ view });
+  };
+
+  // Helper to check if a date is within a period
+  const isWithinPeriod = (dateString, period) => {
+    if (period === 'all') return true;
+    const date = new Date(dateString);
+    const now = new Date();
+
+    if (period === 'daily') {
+      return date.toDateString() === now.toDateString();
+    }
+
+    if (period === 'weekly') {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(now.getDate() - 7);
+      return date >= oneWeekAgo;
+    }
+
+    if (period === 'monthly') {
+      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    }
+
+    return true;
+  };
+
+  // Helper to count users by period
+  const countUsersByPeriod = (period) => {
+    return users.filter(user => isWithinPeriod(user.created_at, period)).length;
+  };
+
   // Filter and search users
   const filteredUsers = users.filter(user => {
-    const matchesSearch = 
+    const matchesSearch =
       user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.user_type.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filterType === 'all' || 
+
+    const matchesFilter = filterType === 'all' ||
       (filterType === 'onboarded' && user.onboarding_complete) ||
       (filterType === 'not_onboarded' && !user.onboarding_complete) ||
       (filterType === 'amazon_connected' && user.amazon_status) ||
       (filterType === 'amazon_not_connected' && !user.amazon_status);
-    
-    return matchesSearch && matchesFilter;
+
+    const matchesView = isWithinPeriod(user.created_at, currentView);
+
+    return matchesSearch && matchesFilter && matchesView;
   });
 
   // Sort users
   const sortedUsers = [...filteredUsers].sort((a, b) => {
     let aValue = a[sortBy];
     let bValue = b[sortBy];
-    
+
     // Handle date sorting
     if (sortBy === 'created_at' || sortBy === 'last_updated') {
       aValue = new Date(aValue === 'N/A' ? '1970-01-01' : aValue);
       bValue = new Date(bValue === 'N/A' ? '1970-01-01' : bValue);
     }
-    
+
     // Handle numeric sorting
     if (sortBy === 'current_credits' || sortBy === 'amazon_product_count') {
       aValue = Number(aValue) || 0;
       bValue = Number(bValue) || 0;
     }
-    
+
     if (sortOrder === 'asc') {
       return aValue > bValue ? 1 : -1;
     } else {
@@ -136,47 +165,7 @@ const UserManagement = () => {
     setSelectedUser(null);
   };
 
-  const fetchReferrals = async () => {
-    try {
-      setIsLoadingReferrals(true);
-      const response = await adminService.getAllReferrals();
-      if (response.success) {
-        setReferrals(response.referrals || []);
-      }
-    } catch (err) {
-      console.error('Error fetching referrals:', err);
-    } finally {
-      setIsLoadingReferrals(false);
-    }
-  };
 
-  const fetchFeedback = async () => {
-    try {
-      setIsLoadingFeedback(true);
-      const response = await adminService.getAllFeedback();
-      if (response.success) {
-        setFeedback(response.feedback || []);
-      }
-    } catch (err) {
-      console.error('Error fetching feedback:', err);
-    } finally {
-      setIsLoadingFeedback(false);
-    }
-  };
-
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-    
-    // Fetch data when expanding
-    if (section === 'referrals' && !expandedSections.referrals) {
-      fetchReferrals();
-    } else if (section === 'feedback' && !expandedSections.feedback) {
-      fetchFeedback();
-    }
-  };
 
   if (isLoading) {
     return (
@@ -222,7 +211,7 @@ const UserManagement = () => {
             <p>Total Users</p>
           </div>
         </div>
-        
+
         <div className={styles.statCard}>
           <div className={styles.statIcon}>
             <FaUsers />
@@ -232,7 +221,7 @@ const UserManagement = () => {
             <p>Onboarded Users</p>
           </div>
         </div>
-        
+
         <div className={styles.statCard}>
           <div className={styles.statIcon}>
             <FaUsers />
@@ -242,7 +231,7 @@ const UserManagement = () => {
             <p>Amazon Connected</p>
           </div>
         </div>
-        
+
         <div className={styles.statCard}>
           <div className={styles.statIcon}>
             <FaUsers />
@@ -252,26 +241,40 @@ const UserManagement = () => {
             <p>Total Credits</p>
           </div>
         </div>
-        
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>
-            <FaShareAlt />
-          </div>
-          <div className={styles.statContent}>
-            <h3>{referrals.length}</h3>
-            <p>Total Referrals</p>
-          </div>
-        </div>
-        
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>
-            <FaComments />
-          </div>
-          <div className={styles.statContent}>
-            <h3>{feedback.length}</h3>
-            <p>Total Feedback</p>
-          </div>
-        </div>
+
+
+      </div>
+
+      {/* Status Tabs (Period filtering) */}
+      <div className={styles.tabsContainer}>
+        <button
+          className={`${styles.tabButton} ${currentView === 'all' ? styles.activeTab : ''}`}
+          onClick={() => handleViewChange('all')}
+        >
+          <FaUsers className={styles.tabIcon} />
+          All Users ({users.length})
+        </button>
+        <button
+          className={`${styles.tabButton} ${currentView === 'daily' ? styles.activeTab : ''}`}
+          onClick={() => handleViewChange('daily')}
+        >
+          <FaCalendar className={styles.tabIcon} />
+          Daily ({countUsersByPeriod('daily')})
+        </button>
+        <button
+          className={`${styles.tabButton} ${currentView === 'weekly' ? styles.activeTab : ''}`}
+          onClick={() => handleViewChange('weekly')}
+        >
+          <FaCalendarAlt className={styles.tabIcon} />
+          Weekly ({countUsersByPeriod('weekly')})
+        </button>
+        <button
+          className={`${styles.tabButton} ${currentView === 'monthly' ? styles.activeTab : ''}`}
+          onClick={() => handleViewChange('monthly')}
+        >
+          <FaCalendarCheck className={styles.tabIcon} />
+          Monthly ({countUsersByPeriod('monthly')})
+        </button>
       </div>
 
       {/* Filters and Search */}
@@ -286,7 +289,7 @@ const UserManagement = () => {
             className={styles.searchInput}
           />
         </div>
-        
+
         <div className={styles.filterContainer}>
           <FaFilter className={styles.filterIcon} />
           <select
@@ -356,9 +359,9 @@ const UserManagement = () => {
           </thead>
           <tbody>
             {sortedUsers.map((user) => (
-              <tr 
-                key={user.user_uuid} 
-                className={styles.userRow} 
+              <tr
+                key={user.user_uuid}
+                className={styles.userRow}
                 onClick={() => handleUserClick(user)}
                 style={{ cursor: 'pointer' }}
               >
@@ -420,7 +423,7 @@ const UserManagement = () => {
             ))}
           </tbody>
         </table>
-        
+
         {sortedUsers.length === 0 && (
           <div className={styles.emptyState}>
             <FaUsers className={styles.emptyIcon} />
@@ -431,212 +434,7 @@ const UserManagement = () => {
 
 
 
-      {/* Referrals Section */}
-      <div className={styles.dropdownSection}>
-        <div 
-          className={styles.dropdownHeader} 
-          onClick={() => toggleSection('referrals')}
-        >
-          <div className={styles.dropdownTitle}>
-            <FaShareAlt className={styles.dropdownIcon} />
-            <h3>User Referrals</h3>
-            <span className={styles.dropdownCount}>({referrals.length})</span>
-          </div>
-          {expandedSections.referrals ? (
-            <FaChevronDown className={styles.dropdownArrow} />
-          ) : (
-            <FaChevronRight className={styles.dropdownArrow} />
-          )}
-        </div>
-        
 
-        
-        {expandedSections.referrals && (
-          <div className={styles.dropdownContent}>
-            {isLoadingReferrals ? (
-              <div className={styles.loadingState}>
-                <FaSpinner className={styles.spinner} />
-                <p>Loading referrals...</p>
-              </div>
-            ) : referrals.length > 0 ? (
-              <div className={styles.referralsTable}>
-                <table className={styles.dataTable}>
-                  <thead>
-                    <tr>
-                      <th>Referrer</th>
-                      <th>Referred Contact</th>
-                      <th>Status</th>
-                      <th>Created At</th>
-                      <th>Bonus Credits</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {referrals.map((referral) => (
-                      <tr key={referral.referral_id} className={styles.dataRow}>
-                        <td>
-                          <div className={styles.referrerInfo}>
-                            <span className={styles.referrerName}>{referral.referrer_name}</span>
-                            <small className={styles.referrerId}>ID: {referral.referrer_uuid}</small>
-                          </div>
-                        </td>
-                        <td>
-                          <div className={styles.referredInfo}>
-                            <span className={styles.referredEmail}>{referral.referred_email}</span>
-                            {referral.referred_phone && (
-                              <small className={styles.referredPhone}>Phone: {referral.referred_phone}</small>
-                            )}
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`${styles.statusBadge} ${
-                            referral.status === 'approved' ? styles.successBadge : 
-                            referral.status === 'rejected' ? styles.errorBadge : styles.warningBadge
-                          }`}>
-                            {referral.status}
-                          </span>
-                        </td>
-                        <td>{formatDate(referral.created_at)}</td>
-                        <td>
-                          <span className={styles.bonusCredits}>
-                            {referral.bonus_credits} credits
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className={styles.emptyState}>
-                <FaShareAlt className={styles.emptyIcon} />
-                <p>No referrals found.</p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Feedback Section */}
-      <div className={styles.dropdownSection}>
-        <div 
-          className={styles.dropdownHeader} 
-          onClick={() => toggleSection('feedback')}
-        >
-          <div className={styles.dropdownTitle}>
-            <FaComments className={styles.dropdownIcon} />
-            <h3>User Feedback</h3>
-            <span className={styles.dropdownCount}>({feedback.length})</span>
-          </div>
-          {expandedSections.feedback ? (
-            <FaChevronDown className={styles.dropdownArrow} />
-          ) : (
-            <FaChevronRight className={styles.dropdownArrow} />
-          )}
-        </div>
-        
-
-        
-        {expandedSections.feedback && (
-          <div className={styles.dropdownContent}>
-            {isLoadingFeedback ? (
-              <div className={styles.loadingState}>
-                <FaSpinner className={styles.spinner} />
-                <p>Loading feedback...</p>
-              </div>
-            ) : feedback.length > 0 ? (
-              <div className={styles.feedbackTable}>
-                <table className={styles.dataTable}>
-                  <thead>
-                    <tr>
-                      <th>User</th>
-                      <th>Feedback</th>
-                      <th>Rating</th>
-                      <th>Category</th>
-                      <th>Status</th>
-                      <th>Priority</th>
-                      <th>Created At</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {feedback.map((item) => (
-                      <tr key={item.feedback_id} className={styles.dataRow}>
-                        <td>
-                          <div className={styles.userInfo}>
-                            <span className={styles.username}>{item.username}</span>
-                            <small className={styles.userId}>ID: {item.user_uuid}</small>
-                          </div>
-                        </td>
-                        <td className={styles.feedbackText}>
-                          <div className={styles.feedbackContent}>
-                            {typeof item.feedback_text === 'object' ? (
-                              <div>
-                                <div><strong>General:</strong> {item.feedback_text.general_comment || 'N/A'}</div>
-                                <div><strong>Improvement:</strong> {item.feedback_text.improvement_suggestion || 'N/A'}</div>
-                                <div><strong>Would Refer:</strong> {item.feedback_text.would_refer || 'N/A'}</div>
-                                <div><strong>Submitted:</strong> {item.feedback_text.submitted_at ? new Date(item.feedback_text.submitted_at).toLocaleDateString() : 'N/A'}</div>
-                              </div>
-                            ) : (
-                              item.feedback_text
-                            )}
-                          </div>
-                        </td>
-                        <td>
-                          <div className={styles.ratingDisplay}>
-                            {typeof item.feedback_text === 'object' ? (
-                              <div>
-                                <div><strong>Description:</strong> {item.feedback_text.rating_description || 0}/5</div>
-                                <div><strong>Infographics:</strong> {item.feedback_text.rating_infographics || 0}/5</div>
-                                <div><strong>Title/Bullets:</strong> {item.feedback_text.rating_title_bullets || 0}/5</div>
-                              </div>
-                            ) : (
-                              <>
-                                {[...Array(5)].map((_, i) => (
-                                  <FaStar 
-                                    key={i} 
-                                    className={`${styles.star} ${i < item.rating ? styles.starFilled : styles.starEmpty}`} 
-                                  />
-                                ))}
-                                <span className={styles.ratingText}>({item.rating}/5)</span>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                        <td>
-                          <span className={styles.categoryBadge}>
-                            {item.category}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`${styles.statusBadge} ${
-                            item.status === 'resolved' ? styles.successBadge : 
-                            item.status === 'in_progress' ? styles.warningBadge : styles.infoBadge
-                          }`}>
-                            {item.status}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`${styles.priorityBadge} ${
-                            item.priority === 'high' ? styles.highPriority : 
-                            item.priority === 'medium' ? styles.mediumPriority : styles.lowPriority
-                          }`}>
-                            {item.priority}
-                          </span>
-                        </td>
-                        <td>{formatDate(item.created_at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className={styles.emptyState}>
-                <FaComments className={styles.emptyIcon} />
-                <p>No feedback found.</p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
 
       {/* User Details Modal */}
       {showUserModal && selectedUser && (
@@ -648,7 +446,7 @@ const UserManagement = () => {
                 <FaTimes />
               </button>
             </div>
-            
+
             <div className={styles.modalBody}>
               <div className={styles.userDetailsGrid}>
                 {/* Basic Information */}
@@ -794,7 +592,7 @@ const UserManagement = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className={styles.modalFooter}>
               <button className={styles.modalButton} onClick={closeUserModal}>
                 Close

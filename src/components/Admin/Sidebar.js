@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  FaCoins, 
-  FaUsers, 
-  FaChartBar, 
-  FaCog, 
-  FaBars, 
+import {
+  FaCoins,
+  FaUsers,
+  FaChartBar,
+  FaCog,
+  FaBars,
   FaTimes,
   FaCreditCard,
   FaCheckCircle,
   FaTimesCircle,
   FaClock,
   FaCommentDots,
-  FaShareAlt
+  FaShareAlt,
+  FaCalendar,
+  FaCalendarAlt,
+  FaCalendarCheck
 } from 'react-icons/fa';
 import styles from './Sidebar.module.css';
 
@@ -64,7 +67,30 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: 'User Management',
       icon: <FaUsers />,
       path: '/admin/users',
-      description: 'Manage user accounts'
+      description: 'Manage user accounts',
+      subItems: [
+        {
+          id: 'daily-users',
+          label: 'Daily',
+          icon: <FaCalendar />,
+          path: '/admin/users?view=daily',
+          description: 'Daily user registration stats'
+        },
+        {
+          id: 'weekly-users',
+          label: 'Weekly',
+          icon: <FaCalendarAlt />,
+          path: '/admin/users?view=weekly',
+          description: 'Weekly user registration stats'
+        },
+        {
+          id: 'monthly-users',
+          label: 'Monthly',
+          icon: <FaCalendarCheck />,
+          path: '/admin/users?view=monthly',
+          description: 'Monthly user registration stats'
+        }
+      ]
     },
     {
       id: 'feedback',
@@ -131,7 +157,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       {isOpen && (
         <div className={styles.mobileOverlay} onClick={toggleSidebar} />
       )}
-      
+
       {/* Sidebar */}
       <div className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
         {/* Sidebar header */}
