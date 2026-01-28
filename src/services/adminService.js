@@ -128,6 +128,7 @@ const adminService = {
   },
 
   // Get all credit requests with optional status filter - with request deduplication
+  // Route: GET /api/auth/credit_requests (admin_dashboard module)
   getCreditRequests: async (status = null, forceRefresh = false) => {
     const requestKey = `getCreditRequests_${status || 'all'}`;
     
@@ -191,6 +192,7 @@ const adminService = {
   },
 
   // Approve a credit request
+  // Route: POST /api/auth/credit_requests/:user_id/approve (admin_dashboard module)
   approveCreditRequest: async (userUuid, notes = '') => {
     try {
       const response = await safeFetch(
@@ -205,6 +207,7 @@ const adminService = {
   },
 
   // Reject a credit request
+  // Route: POST /api/auth/credit_requests/:user_id/reject (admin_dashboard module)
   rejectCreditRequest: async (userUuid, notes = '') => {
     try {
       const response = await safeFetch(
@@ -247,6 +250,7 @@ const adminService = {
   },
 
   // Get all users for admin dashboard
+  // Route: GET /api/auth/users (admin_dashboard module)
   getAllUsers: async () => {
     try {
       const response = await safeFetch(
@@ -261,6 +265,7 @@ const adminService = {
   },
 
   // Get all referrals for admin dashboard
+  // Route: GET /api/auth/referrals (admin_dashboard module)
   getAllReferrals: async () => {
     try {
       const response = await safeFetch(
@@ -275,6 +280,7 @@ const adminService = {
   },
 
   // Get all feedback for admin dashboard
+  // Route: GET /api/auth/feedback (admin_dashboard module)
   getAllFeedback: async () => {
     try {
       const response = await safeFetch(
@@ -284,6 +290,53 @@ const adminService = {
       return handleResponse(response);
     } catch (error) {
       console.error('Error fetching all feedback:', error);
+      throw error;
+    }
+  },
+
+  // Get active users based on generation activity
+  // Route: GET /api/auth/users/active?period={period} (admin_dashboard module)
+  getActiveUsers: async (period = 'daily') => {
+    try {
+      const response = await safeFetch(
+        `${API_BASE_URL}/auth/users/active?period=${period}`, 
+        createRequestOptions('GET')
+      );
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching active users:', error);
+      throw error;
+    }
+  },
+
+  // Get user signups based on period (uses existing /users endpoint with period parameter)
+  // Route: GET /api/auth/users?period={period} (admin_dashboard module)
+  getUserSignups: async (period = 'daily') => {
+    try {
+      const response = await safeFetch(
+        `${API_BASE_URL}/auth/users?period=${period}`, 
+        createRequestOptions('GET')
+      );
+      const data = await handleResponse(response);
+      // Transform response to match expected format
+      return {
+        success: data.success,
+        period: data.period || period,
+        total_signups: data.total_signups || data.total_users || 0,
+        signups: (data.users || []).map(user => ({
+          user_uuid: user.user_uuid,
+          username: user.username,
+          email: user.email,
+          phone_number: user.phone_number,
+          created_at: user.created_at,
+          onboarding_complete: user.onboarding_complete,
+          user_type: user.user_type
+        })),
+        start_date: data.start_date,
+        end_date: data.end_date
+      };
+    } catch (error) {
+      console.error('Error fetching user signups:', error);
       throw error;
     }
   },

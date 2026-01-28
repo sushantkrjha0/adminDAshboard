@@ -12,7 +12,9 @@ import {
   FaTimesCircle,
   FaClock,
   FaCommentDots,
-  FaShareAlt
+  FaShareAlt,
+  FaChartLine,
+  FaUserPlus
 } from 'react-icons/fa';
 import styles from './Sidebar.module.css';
 
@@ -64,7 +66,23 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       label: 'User Management',
       icon: <FaUsers />,
       path: '/admin/users',
-      description: 'Manage user accounts'
+      description: 'Manage user accounts',
+      subItems: [
+        {
+          id: 'user-activity',
+          label: 'User Activity',
+          icon: <FaChartLine />,
+          path: '/admin/users/activity',
+          description: 'View user activity and generation history'
+        },
+        {
+          id: 'user-signups',
+          label: 'User Signups',
+          icon: <FaUserPlus />,
+          path: '/admin/users/signups',
+          description: 'View new user registrations and signups'
+        }
+      ]
     },
     {
       id: 'feedback',
@@ -103,7 +121,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       const basePath = path.split('?')[0];
       return location.pathname === basePath;
     }
-    return location.pathname === path;
+    // Check if current path starts with the route path (for nested routes)
+    return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
   const renderSubItems = (subItems) => {
@@ -147,20 +166,26 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
         {/* Navigation items */}
         <nav className={styles.navigation}>
-          {navigationItems.map((item) => (
-            <div key={item.id} className={styles.navItem}>
-              <div
-                className={`${styles.navLink} ${isActiveRoute(item.path) ? styles.active : ''} ${item.disabled ? styles.disabled : ''}`}
-                onClick={() => !item.disabled && handleNavigation(item.path)}
-                title={item.description}
-              >
-                <span className={styles.navIcon}>{item.icon}</span>
-                <span className={styles.navLabel}>{item.label}</span>
-                {item.disabled && <span className={styles.comingSoon}>Coming Soon</span>}
+          {navigationItems.map((item) => {
+            // Check if any sub-item is active
+            const hasActiveSubItem = item.subItems?.some(subItem => isActiveRoute(subItem.path));
+            const isParentActive = isActiveRoute(item.path) || hasActiveSubItem;
+            
+            return (
+              <div key={item.id} className={styles.navItem}>
+                <div
+                  className={`${styles.navLink} ${isParentActive ? styles.active : ''} ${item.disabled ? styles.disabled : ''}`}
+                  onClick={() => !item.disabled && handleNavigation(item.path)}
+                  title={item.description}
+                >
+                  <span className={styles.navIcon}>{item.icon}</span>
+                  <span className={styles.navLabel}>{item.label}</span>
+                  {item.disabled && <span className={styles.comingSoon}>Coming Soon</span>}
+                </div>
+                {renderSubItems(item.subItems)}
               </div>
-              {renderSubItems(item.subItems)}
-            </div>
-          ))}
+            );
+          })}
         </nav>
 
         {/* Sidebar footer */}

@@ -178,6 +178,7 @@ const UserManagement = () => {
     }
   };
 
+
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
@@ -637,6 +638,7 @@ const UserManagement = () => {
           </div>
         )}
       </div>
+
 
       {/* User Details Modal */}
       {showUserModal && selectedUser && (
