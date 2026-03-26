@@ -30,21 +30,25 @@ const CreditRequests = () => {
   const fetchCreditRequests = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const response = await adminService.getCreditRequests(currentStatus !== 'all' ? currentStatus : null);
-      setCreditRequests(response.credit_requests || []);
-      
-      // Calculate stats
-      const allRequests = await adminService.getCreditRequests('all');
-      const allData = allRequests.credit_requests || [];
-      
+      // Single API call — fetch all, then filter client-side
+      const response = await adminService.getCreditRequests(null);
+      const allData = response.credit_requests || [];
+
+      // Calculate stats from full dataset
       setStats({
         pending: allData.filter(req => req.status === 'pending').length,
         approved: allData.filter(req => req.status === 'approved').length,
         rejected: allData.filter(req => req.status === 'rejected').length,
         total: allData.length
       });
+
+      // Filter for display
+      const filtered = currentStatus === 'all'
+        ? allData
+        : allData.filter(req => req.status === currentStatus);
+      setCreditRequests(filtered);
     } catch (err) {
       console.error("Error fetching credit requests:", err);
       setError("Failed to fetch credit requests. Please try again later.");

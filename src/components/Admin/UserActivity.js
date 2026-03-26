@@ -14,27 +14,32 @@ const UserActivity = () => {
   });
   const [error, setError] = useState(null);
 
+  const isInitialMount = React.useRef(true);
+
+  // On mount: fetch all stats (3 periods) in one go
   useEffect(() => {
-    fetchActiveUsers();
     fetchAllStats();
   }, []);
 
+  // On period change (skip initial mount since fetchAllStats covers it)
   useEffect(() => {
-    fetchActiveUsers();
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    fetchActiveUsers(activeUsersPeriod);
   }, [activeUsersPeriod]);
 
-  const fetchActiveUsers = async (period = null) => {
+  const fetchActiveUsers = async (period) => {
     try {
       setIsLoadingActiveUsers(true);
       setError(null);
-      const targetPeriod = period || activeUsersPeriod;
-      const response = await adminService.getActiveUsers(targetPeriod);
+      const response = await adminService.getActiveUsers(period);
       if (response.success) {
         setActiveUsers(response.active_users || []);
-        // Update stats for current period
         setActiveUsersStats(prev => ({
           ...prev,
-          [targetPeriod]: response.total_active_users || 0
+          [period]: response.total_active_users || 0
         }));
       }
     } catch (err) {
@@ -48,17 +53,29 @@ const UserActivity = () => {
   // Fetch all periods stats on mount
   const fetchAllStats = async () => {
     try {
+      setIsLoadingActiveUsers(true);
+      setError(null);
       const [dailyRes, weeklyRes, monthlyRes] = await Promise.all([
         adminService.getActiveUsers('daily'),
         adminService.getActiveUsers('weekly'),
         adminService.getActiveUsers('monthly')
       ]);
-      
-      if (dailyRes.success) setActiveUsersStats(prev => ({ ...prev, daily: dailyRes.total_active_users || 0 }));
-      if (weeklyRes.success) setActiveUsersStats(prev => ({ ...prev, weekly: weeklyRes.total_active_users || 0 }));
-      if (monthlyRes.success) setActiveUsersStats(prev => ({ ...prev, monthly: monthlyRes.total_active_users || 0 }));
+
+      setActiveUsersStats({
+        daily: dailyRes.success ? dailyRes.total_active_users || 0 : 0,
+        weekly: weeklyRes.success ? weeklyRes.total_active_users || 0 : 0,
+        monthly: monthlyRes.success ? monthlyRes.total_active_users || 0 : 0
+      });
+
+      // Set active users list for the default period (daily)
+      if (dailyRes.success) {
+        setActiveUsers(dailyRes.active_users || []);
+      }
     } catch (err) {
       console.error('Error fetching active users stats:', err);
+      setError('Failed to fetch active users. Please try again later.');
+    } finally {
+      setIsLoadingActiveUsers(false);
     }
   };
 

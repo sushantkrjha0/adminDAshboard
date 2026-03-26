@@ -3,10 +3,15 @@ import { FaUserPlus, FaSpinner, FaCalendar, FaClock, FaCheckCircle, FaTimesCircl
 import styles from './UserSignups.module.css';
 import adminService from '../../services/adminService';
 
+const filterValidSignups = (signups) =>
+  (signups || []).filter(
+    user => user.username !== "Error Processing User" && user.user_type !== "Error"
+  );
+
 const UserSignups = () => {
   const [signups, setSignups] = useState([]);
   const [isLoadingSignups, setIsLoadingSignups] = useState(false);
-  const [signupsPeriod, setSignupsPeriod] = useState('daily'); // daily, weekly, monthly
+  const [signupsPeriod, setSignupsPeriod] = useState('daily');
   const [signupsStats, setSignupsStats] = useState({
     daily: 0,
     weekly: 0,
@@ -14,31 +19,33 @@ const UserSignups = () => {
   });
   const [error, setError] = useState(null);
 
+  const isInitialMount = React.useRef(true);
+
+  // On mount: fetch all stats (3 periods) in one go
   useEffect(() => {
-    fetchSignups();
     fetchAllStats();
   }, []);
 
+  // On period change (skip initial mount since fetchAllStats covers it)
   useEffect(() => {
-    fetchSignups();
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    fetchSignups(signupsPeriod);
   }, [signupsPeriod]);
 
-  const fetchSignups = async (period = null) => {
+  const fetchSignups = async (period) => {
     try {
       setIsLoadingSignups(true);
       setError(null);
-      const targetPeriod = period || signupsPeriod;
-      const response = await adminService.getUserSignups(targetPeriod);
+      const response = await adminService.getUserSignups(period);
       if (response.success) {
-        // Filter out "Error Processing User" entries
-        const validSignups = (response.signups || []).filter(
-          user => user.username !== "Error Processing User" && user.user_type !== "Error"
-        );
+        const validSignups = filterValidSignups(response.signups);
         setSignups(validSignups);
-        // Update stats for current period (use filtered count)
         setSignupsStats(prev => ({
           ...prev,
-          [targetPeriod]: validSignups.length
+          [period]: validSignups.length
         }));
       }
     } catch (err) {
@@ -52,33 +59,31 @@ const UserSignups = () => {
   // Fetch all periods stats on mount
   const fetchAllStats = async () => {
     try {
+      setIsLoadingSignups(true);
+      setError(null);
       const [dailyRes, weeklyRes, monthlyRes] = await Promise.all([
         adminService.getUserSignups('daily'),
         adminService.getUserSignups('weekly'),
         adminService.getUserSignups('monthly')
       ]);
-      
-      // Filter out error entries and count valid signups
-      if (dailyRes.success) {
-        const validDaily = (dailyRes.signups || []).filter(
-          user => user.username !== "Error Processing User" && user.user_type !== "Error"
-        );
-        setSignupsStats(prev => ({ ...prev, daily: validDaily.length }));
-      }
-      if (weeklyRes.success) {
-        const validWeekly = (weeklyRes.signups || []).filter(
-          user => user.username !== "Error Processing User" && user.user_type !== "Error"
-        );
-        setSignupsStats(prev => ({ ...prev, weekly: validWeekly.length }));
-      }
-      if (monthlyRes.success) {
-        const validMonthly = (monthlyRes.signups || []).filter(
-          user => user.username !== "Error Processing User" && user.user_type !== "Error"
-        );
-        setSignupsStats(prev => ({ ...prev, monthly: validMonthly.length }));
-      }
+
+      const validDaily = dailyRes.success ? filterValidSignups(dailyRes.signups) : [];
+      const validWeekly = weeklyRes.success ? filterValidSignups(weeklyRes.signups) : [];
+      const validMonthly = monthlyRes.success ? filterValidSignups(monthlyRes.signups) : [];
+
+      setSignupsStats({
+        daily: validDaily.length,
+        weekly: validWeekly.length,
+        monthly: validMonthly.length
+      });
+
+      // Set signups list for the default period (daily)
+      setSignups(validDaily);
     } catch (err) {
       console.error('Error fetching user signups stats:', err);
+      setError('Failed to fetch user signups. Please try again later.');
+    } finally {
+      setIsLoadingSignups(false);
     }
   };
 

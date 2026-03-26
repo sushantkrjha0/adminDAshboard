@@ -18,16 +18,14 @@ const UserManagement = () => {
   const [referrals, setReferrals] = useState([]);
   const [feedback, setFeedback] = useState([]);
   const [expandedSections, setExpandedSections] = useState({
-    referrals: true,  // Start expanded like credit requests
-    feedback: true    // Start expanded like credit requests
+    referrals: false,
+    feedback: false
   });
   const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
 
   useEffect(() => {
     fetchUsers();
-    fetchReferrals();  // Fetch referrals on mount
-    fetchFeedback();   // Fetch feedback on mount
   }, []);
 
   const fetchUsers = async () => {

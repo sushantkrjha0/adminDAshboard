@@ -128,7 +128,7 @@ const adminService = {
   },
 
   // Get all credit requests with optional status filter - with request deduplication
-  // Route: GET /api/auth/credit_requests (admin_dashboard module)
+  // Route: GET /api/admin/credit_requests (admin_dashboard module)
   getCreditRequests: async (status = null, forceRefresh = false) => {
     const requestKey = `getCreditRequests_${status || 'all'}`;
     
@@ -142,7 +142,7 @@ const adminService = {
     // Create a new promise for this request
     const requestPromise = (async () => {
       try {
-        const url = `${API_BASE_URL}/auth/credit_requests${status ? `?status=${status}` : ''}`;
+        const url = `${API_BASE_URL}/admin/credit_requests${status ? `?status=${status}` : ''}`;
         console.log(`Fetching credit requests from: ${url}`);
         
         const requestOptions = createRequestOptions('GET');
@@ -192,11 +192,11 @@ const adminService = {
   },
 
   // Approve a credit request
-  // Route: POST /api/auth/credit_requests/:user_id/approve (admin_dashboard module)
+  // Route: POST /api/admin/credit_requests/:user_id/approve (admin_dashboard module)
   approveCreditRequest: async (userUuid, notes = '') => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/credit_requests/${userUuid}/approve`, 
+        `${API_BASE_URL}/admin/credit_requests/${userUuid}/approve`,
         createRequestOptions('POST', { notes })
       );
       return handleResponse(response);
@@ -207,11 +207,11 @@ const adminService = {
   },
 
   // Reject a credit request
-  // Route: POST /api/auth/credit_requests/:user_id/reject (admin_dashboard module)
+  // Route: POST /api/admin/credit_requests/:user_id/reject (admin_dashboard module)
   rejectCreditRequest: async (userUuid, notes = '') => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/credit_requests/${userUuid}/reject`, 
+        `${API_BASE_URL}/admin/credit_requests/${userUuid}/reject`, 
         createRequestOptions('POST', { notes })
       );
       return handleResponse(response);
@@ -250,11 +250,11 @@ const adminService = {
   },
 
   // Get all users for admin dashboard
-  // Route: GET /api/auth/users (admin_dashboard module)
+  // Route: GET /api/admin/users (admin_dashboard module)
   getAllUsers: async () => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/users`, 
+        `${API_BASE_URL}/admin/users`,
         createRequestOptions('GET')
       );
       return handleResponse(response);
@@ -265,11 +265,11 @@ const adminService = {
   },
 
   // Get all referrals for admin dashboard
-  // Route: GET /api/auth/referrals (admin_dashboard module)
+  // Route: GET /api/admin/referrals (admin_dashboard module)
   getAllReferrals: async () => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/referrals`, 
+        `${API_BASE_URL}/admin/referrals`,
         createRequestOptions('GET')
       );
       return handleResponse(response);
@@ -280,11 +280,11 @@ const adminService = {
   },
 
   // Get all feedback for admin dashboard
-  // Route: GET /api/auth/feedback (admin_dashboard module)
+  // Route: GET /api/admin/feedback (admin_dashboard module)
   getAllFeedback: async () => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/feedback`, 
+        `${API_BASE_URL}/admin/feedback`, 
         createRequestOptions('GET')
       );
       return handleResponse(response);
@@ -295,11 +295,11 @@ const adminService = {
   },
 
   // Get active users based on generation activity
-  // Route: GET /api/auth/users/active?period={period} (admin_dashboard module)
+  // Route: GET /api/admin/users/active?period={period} (admin_dashboard module)
   getActiveUsers: async (period = 'daily') => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/users/active?period=${period}`, 
+        `${API_BASE_URL}/admin/users/active?period=${period}`, 
         createRequestOptions('GET')
       );
       return handleResponse(response);
@@ -310,11 +310,11 @@ const adminService = {
   },
 
   // Get user signups based on period (uses existing /users endpoint with period parameter)
-  // Route: GET /api/auth/users?period={period} (admin_dashboard module)
+  // Route: GET /api/admin/users?period={period} (admin_dashboard module)
   getUserSignups: async (period = 'daily') => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/users?period=${period}`, 
+        `${API_BASE_URL}/admin/users?period=${period}`, 
         createRequestOptions('GET')
       );
       const data = await handleResponse(response);

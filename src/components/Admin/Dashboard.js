@@ -28,7 +28,7 @@ const Dashboard = () => {
       
       // Fetch credit requests to get stats
       const [creditResponse, feedbackResponse, referralsResponse] = await Promise.all([
-        adminService.getCreditRequests('all'),
+        adminService.getCreditRequests(null),
         adminService.getAllFeedback(),
         adminService.getAllReferrals()
       ]);
