@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  FaCoins, 
-  FaUsers, 
-  FaChartBar, 
-  FaCog, 
-  FaBars, 
+import {
+  FaCoins,
+  FaUsers,
+  FaChartBar,
+  FaCog,
+  FaBars,
   FaTimes,
   FaCreditCard,
   FaCheckCircle,
@@ -14,8 +14,10 @@ import {
   FaCommentDots,
   FaShareAlt,
   FaChartLine,
-  FaUserPlus
+  FaUserPlus,
+  FaSignOutAlt
 } from 'react-icons/fa';
+import { logout } from '../../utils/auth';
 import styles from './Sidebar.module.css';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
