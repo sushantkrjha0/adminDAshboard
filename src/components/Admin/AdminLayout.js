@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import { FaBars, FaTimes } from 'react-icons/fa';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { FaBars, FaTimes, FaSignOutAlt } from 'react-icons/fa';
+import { logout } from '../../utils/auth';
 import Sidebar from './Sidebar';
 import styles from './AdminLayout.module.css';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Close sidebar when route changes (mobile)
   useEffect(() => {
@@ -61,6 +63,17 @@ const AdminLayout = () => {
                 {localStorage.getItem('adminEmail') || 'Admin'}
               </span>
             </div>
+            <button
+              className={styles.logoutButton}
+              onClick={() => {
+                logout();
+                navigate('/admin/login');
+              }}
+              title="Logout"
+            >
+              <FaSignOutAlt />
+              <span className={styles.logoutText}>Logout</span>
+            </button>
           </div>
         </header>
 

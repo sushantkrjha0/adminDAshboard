@@ -194,8 +194,18 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         <div className={styles.sidebarFooter}>
           <div className={styles.adminInfo}>
             <FaUsers className={styles.adminIcon} />
-            <span>Admin Dashboard</span>
+            <span>{localStorage.getItem('adminEmail') || 'Admin'}</span>
           </div>
+          <button
+            className={styles.logoutButton}
+            onClick={() => {
+              logout();
+              navigate('/admin/login');
+            }}
+          >
+            <FaSignOutAlt />
+            <span>Logout</span>
+          </button>
         </div>
       </div>
     </>
