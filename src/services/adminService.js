@@ -250,11 +250,11 @@ const adminService = {
   },
 
   // Get all users for admin dashboard
-  // Route: GET /api/auth/users (admin_dashboard module)
+  // Route: GET /api/admin/users
   getAllUsers: async () => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/users`, 
+        `${API_BASE_URL}/admin/users`,
         createRequestOptions('GET')
       );
       return handleResponse(response);
@@ -265,11 +265,11 @@ const adminService = {
   },
 
   // Get all referrals for admin dashboard
-  // Route: GET /api/auth/referrals (admin_dashboard module)
+  // Route: GET /api/admin/referrals
   getAllReferrals: async () => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/referrals`, 
+        `${API_BASE_URL}/admin/referrals`,
         createRequestOptions('GET')
       );
       return handleResponse(response);
@@ -280,11 +280,11 @@ const adminService = {
   },
 
   // Get all feedback for admin dashboard
-  // Route: GET /api/auth/feedback (admin_dashboard module)
+  // Route: GET /api/admin/feedback
   getAllFeedback: async () => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/feedback`, 
+        `${API_BASE_URL}/admin/feedback`,
         createRequestOptions('GET')
       );
       return handleResponse(response);
@@ -295,11 +295,11 @@ const adminService = {
   },
 
   // Get active users based on generation activity
-  // Route: GET /api/auth/users/active?period={period} (admin_dashboard module)
+  // Route: GET /api/admin/users/active?period={period}
   getActiveUsers: async (period = 'daily') => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/users/active?period=${period}`, 
+        `${API_BASE_URL}/admin/users/active?period=${period}`,
         createRequestOptions('GET')
       );
       return handleResponse(response);
@@ -309,12 +309,12 @@ const adminService = {
     }
   },
 
-  // Get user signups based on period (uses existing /users endpoint with period parameter)
-  // Route: GET /api/auth/users?period={period} (admin_dashboard module)
+  // Get user signups based on period
+  // Route: GET /api/admin/users?period={period}
   getUserSignups: async (period = 'daily') => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/users?period=${period}`, 
+        `${API_BASE_URL}/admin/users?period=${period}`,
         createRequestOptions('GET')
       );
       const data = await handleResponse(response);
@@ -341,6 +341,21 @@ const adminService = {
     }
   },
   
+  // Get listing stats for admin dashboard (deal tags, listing scores, listings generated per user)
+  // Route: GET /api/admin/listing/stats
+  getListingStats: async () => {
+    try {
+      const response = await safeFetch(
+        `${API_BASE_URL}/admin/listing/stats`,
+        createRequestOptions('GET')
+      );
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching listing stats:', error);
+      throw error;
+    }
+  },
+
   // Force refresh of credit requests - to be called manually after approve/reject
   forceRefreshCreditRequests: async (status = null) => {
     return adminService.getCreditRequests(status, true);

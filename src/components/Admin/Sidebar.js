@@ -15,7 +15,11 @@ import {
   FaShareAlt,
   FaChartLine,
   FaUserPlus,
-  FaSignOutAlt
+  FaSignOutAlt,
+  FaListAlt,
+  FaTag,
+  FaStar,
+  FaFileAlt
 } from 'react-icons/fa';
 import { logout } from '../../utils/auth';
 import styles from './Sidebar.module.css';
@@ -83,6 +87,36 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
           icon: <FaUserPlus />,
           path: '/admin/users/signups',
           description: 'View new user registrations and signups'
+        }
+      ]
+    },
+    {
+      id: 'listing',
+      label: 'Listing',
+      icon: <FaListAlt />,
+      path: '/admin/listing',
+      description: 'Manage listings and tags',
+      subItems: [
+        {
+          id: 'deal-tags',
+          label: 'Deal Tags',
+          icon: <FaTag />,
+          path: '/admin/listing/deal-tags',
+          description: 'Manage deal tags'
+        },
+        {
+          id: 'listing-score',
+          label: 'Listing Score',
+          icon: <FaStar />,
+          path: '/admin/listing/listing-score',
+          description: 'View listing scores'
+        },
+        {
+          id: 'generated-listing',
+          label: 'Generated Listing',
+          icon: <FaFileAlt />,
+          path: '/admin/listing/generated-listing',
+          description: 'View generated listings'
         }
       ]
     },

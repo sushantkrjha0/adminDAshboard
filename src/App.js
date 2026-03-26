@@ -9,6 +9,10 @@ import UserActivity from './components/Admin/UserActivity';
 import UserSignups from './components/Admin/UserSignups';
 import Feedback from './components/Admin/Feedback';
 import Referrals from './components/Admin/Referrals';
+import Listing from './components/Admin/Listing';
+import DealTags from './components/Admin/DealTags';
+import ListingScore from './components/Admin/ListingScore';
+import GeneratedListing from './components/Admin/GeneratedListing';
 import { setupAxiosInterceptors } from './utils/auth';
 import './App.css';
 
@@ -26,6 +30,10 @@ function App() {
         <Route path="users/signups" element={<UserSignups />} />
         <Route path="feedback" element={<Feedback />} />
         <Route path="referrals" element={<Referrals />} />
+        <Route path="listing" element={<Listing />} />
+        <Route path="listing/deal-tags" element={<DealTags />} />
+        <Route path="listing/listing-score" element={<ListingScore />} />
+        <Route path="listing/generated-listing" element={<GeneratedListing />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
 
