@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaChartLine, FaSpinner, FaCalendar, FaClock } from 'react-icons/fa';
 import styles from './UserActivity.module.css';
 import adminService from '../../services/adminService';
@@ -13,6 +13,7 @@ const UserActivity = () => {
     monthly: 0
   });
   const [error, setError] = useState(null);
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
     fetchActiveUsers();
@@ -20,6 +21,10 @@ const UserActivity = () => {
   }, []);
 
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     fetchActiveUsers();
   }, [activeUsersPeriod]);
 

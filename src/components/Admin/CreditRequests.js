@@ -30,15 +30,17 @@ const CreditRequests = () => {
   const fetchCreditRequests = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const response = await adminService.getCreditRequests(currentStatus !== 'all' ? currentStatus : null);
-      setCreditRequests(response.credit_requests || []);
-      
-      // Calculate stats
-      const allRequests = await adminService.getCreditRequests('all');
+      // Fetch all once, then filter client-side — avoids a second API call
+      const allRequests = await adminService.getCreditRequests(null);
       const allData = allRequests.credit_requests || [];
-      
+
+      const filtered = currentStatus !== 'all'
+        ? allData.filter(req => req.status === currentStatus)
+        : allData;
+      setCreditRequests(filtered);
+
       setStats({
         pending: allData.filter(req => req.status === 'pending').length,
         approved: allData.filter(req => req.status === 'approved').length,

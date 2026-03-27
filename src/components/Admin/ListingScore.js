@@ -17,7 +17,7 @@ const ListingScore = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await adminService.getListingStats();
+      const response = await adminService.getListingScoresStats();
       if (response.success) {
         setTotals(response.totals || {});
         setUsers(response.users || []);
@@ -44,21 +44,21 @@ const ListingScore = () => {
         <div className={styles.statCard}>
           <div className={`${styles.statIcon} ${styles.scoreIcon}`}><FaStar /></div>
           <div className={styles.statContent}>
-            <h3>{isLoading ? '—' : (totals.total_single_listing_scores || 0)}</h3>
+            <h3>{isLoading ? '—' : (totals.total_single || 0)}</h3>
             <p>Single Listing Scores</p>
           </div>
         </div>
         <div className={styles.statCard}>
           <div className={`${styles.statIcon} ${styles.scoreIcon}`}><FaStar /></div>
           <div className={styles.statContent}>
-            <h3>{isLoading ? '—' : (totals.total_bulk_listing_scores || 0)}</h3>
+            <h3>{isLoading ? '—' : (totals.total_bulk || 0)}</h3>
             <p>Bulk Listing Scores</p>
           </div>
         </div>
         <div className={styles.statCard}>
           <div className={`${styles.statIcon} ${styles.scoreIcon}`}><FaStar /></div>
           <div className={styles.statContent}>
-            <h3>{isLoading ? '—' : (totals.total_listing_scores || 0)}</h3>
+            <h3>{isLoading ? '—' : (totals.total || 0)}</h3>
             <p>Total Listing Scores</p>
           </div>
         </div>
@@ -95,7 +95,7 @@ const ListingScore = () => {
               </tr>
             </thead>
             <tbody>
-              {users.filter(u => u.total_listing_scores > 0).map((user) => (
+              {users.filter(u => u.total > 0).map((user) => (
                 <tr key={user.user_uuid} className={styles.tableRow}>
                   <td className={styles.userCell}>
                     <span className={styles.username}>{user.username}</span>
@@ -103,14 +103,14 @@ const ListingScore = () => {
                   </td>
                   <td className={styles.emailCell}>{user.email || 'N/A'}</td>
                   <td className={styles.centerCell}>
-                    <span className={styles.countBadge}>{user.single_listing_scores || 0}</span>
+                    <span className={styles.countBadge}>{user.single || 0}</span>
                   </td>
                   <td className={styles.centerCell}>
-                    <span className={styles.countBadge}>{user.bulk_listing_scores || 0}</span>
+                    <span className={styles.countBadge}>{user.bulk || 0}</span>
                   </td>
                   <td className={styles.centerCell}>
                     <span className={`${styles.countBadge} ${styles.totalBadge}`}>
-                      {user.total_listing_scores || 0}
+                      {user.total || 0}
                     </span>
                   </td>
                 </tr>

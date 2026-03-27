@@ -10,6 +10,7 @@ const Listing = () => {
     total_listing_scores: 0,
     total_listings_generated: 0,
   });
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalType, setModalType] = useState(null); // 'deal_tags' | 'listing_scores' | 'listings_generated'
@@ -23,11 +24,54 @@ const Listing = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await adminService.getListingStats();
-      if (response.success) {
-        setTotals(response.totals || {});
-        setUsers(response.users || []);
-      }
+      const [dealRes, scoresRes, genRes] = await Promise.all([
+        adminService.getDealTagsStats(),
+        adminService.getListingScoresStats(),
+        adminService.getListingsGeneratedStats(),
+      ]);
+
+      // Build lookup maps by user_uuid
+      const dealMap = Object.fromEntries((dealRes.users || []).map(u => [u.user_uuid, u]));
+      const scoresMap = Object.fromEntries((scoresRes.users || []).map(u => [u.user_uuid, u]));
+      const genMap = Object.fromEntries((genRes.users || []).map(u => [u.user_uuid, u]));
+
+      const allUuids = new Set([
+        ...Object.keys(dealMap),
+        ...Object.keys(scoresMap),
+        ...Object.keys(genMap),
+      ]);
+
+      const merged = Array.from(allUuids).map(uuid => {
+        const d = dealMap[uuid] || {};
+        const s = scoresMap[uuid] || {};
+        const g = genMap[uuid] || {};
+        return {
+          user_uuid: uuid,
+          username: d.username || s.username || g.username || 'Unknown',
+          email: d.email || s.email || g.email || 'N/A',
+          deal_tags_single: d.single || 0,
+          deal_tags_bulk: d.bulk || 0,
+          deal_tags_checked: d.total || 0,
+          single_listing_scores: s.single || 0,
+          bulk_listing_scores: s.bulk || 0,
+          total_listing_scores: s.total || 0,
+          listings_generated_single: g.single || 0,
+          listings_generated_bulk: g.bulk || 0,
+          listings_generated: g.total || 0,
+        };
+      });
+
+      merged.sort((a, b) =>
+        (b.deal_tags_checked + b.total_listing_scores + b.listings_generated) -
+        (a.deal_tags_checked + a.total_listing_scores + a.listings_generated)
+      );
+
+      setTotals({
+        total_deal_tags: (dealRes.totals || {}).total || 0,
+        total_listing_scores: (scoresRes.totals || {}).total || 0,
+        total_listings_generated: (genRes.totals || {}).total || 0,
+      });
+      setUsers(merged);
     } catch (err) {
       console.error('Error fetching listing stats:', err);
       setError('Failed to fetch listing stats. Please try again.');

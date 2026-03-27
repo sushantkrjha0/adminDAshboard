@@ -18,7 +18,7 @@ const GeneratedListing = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await adminService.getListingStats();
+      const response = await adminService.getListingsGeneratedStats();
       if (response.success) {
         setTotals(response.totals || {});
         setUsers(response.users || []);
@@ -45,21 +45,21 @@ const GeneratedListing = () => {
         <div className={styles.statCard}>
           <div className={`${styles.statIcon} ${styles.genIcon}`}><FaFileAlt /></div>
           <div className={styles.statContent}>
-            <h3>{isLoading ? '—' : (totals.total_listings_generated_single || 0)}</h3>
+            <h3>{isLoading ? '—' : (totals.total_single || 0)}</h3>
             <p>Single Listings Generated</p>
           </div>
         </div>
         <div className={styles.statCard}>
           <div className={`${styles.statIcon} ${styles.genIcon}`}><FaFileAlt /></div>
           <div className={styles.statContent}>
-            <h3>{isLoading ? '—' : (totals.total_listings_generated_bulk || 0)}</h3>
+            <h3>{isLoading ? '—' : (totals.total_bulk || 0)}</h3>
             <p>Bulk Listings Generated</p>
           </div>
         </div>
         <div className={styles.statCard}>
           <div className={`${styles.statIcon} ${styles.genIcon}`}><FaFileAlt /></div>
           <div className={styles.statContent}>
-            <h3>{isLoading ? '—' : (totals.total_listings_generated || 0)}</h3>
+            <h3>{isLoading ? '—' : (totals.total || 0)}</h3>
             <p>Total Listings Generated</p>
           </div>
         </div>
@@ -72,7 +72,7 @@ const GeneratedListing = () => {
           <FaSpinner className={styles.spinner} />
           <p>Loading generated listing data...</p>
         </div>
-      ) : users.filter(u => u.listings_generated > 0).length === 0 ? (
+      ) : users.filter(u => u.total > 0).length === 0 ? (
         <div className={styles.emptyState}>
           <FaFileAlt className={styles.emptyIcon} />
           <p>No generated listing activity found.</p>
@@ -97,7 +97,7 @@ const GeneratedListing = () => {
               </tr>
             </thead>
             <tbody>
-              {users.filter(u => u.listings_generated > 0).map((user) => (
+              {users.filter(u => u.total > 0).map((user) => (
                 <tr key={user.user_uuid} className={styles.tableRow}>
                   <td className={styles.userCell}>
                     <span className={styles.username}>{user.username}</span>
@@ -105,14 +105,14 @@ const GeneratedListing = () => {
                   </td>
                   <td className={styles.emailCell}>{user.email || 'N/A'}</td>
                   <td className={styles.centerCell}>
-                    <span className={styles.countBadge}>{user.listings_generated_single || 0}</span>
+                    <span className={styles.countBadge}>{user.single || 0}</span>
                   </td>
                   <td className={styles.centerCell}>
-                    <span className={styles.countBadge}>{user.listings_generated_bulk || 0}</span>
+                    <span className={styles.countBadge}>{user.bulk || 0}</span>
                   </td>
                   <td className={styles.centerCell}>
                     <span className={`${styles.countBadge} ${styles.genBadge}`}>
-                      {user.listings_generated || 0}
+                      {user.total || 0}
                     </span>
                   </td>
                   <td className={styles.centerCell}>
@@ -154,19 +154,19 @@ const GeneratedListing = () => {
                   <div className={styles.scoreCard}>
                     <span className={styles.scoreCardLabel}>New Listings</span>
                     <span className={`${styles.countBadge} ${styles.genBadge}`}>
-                      {selectedUser.listings_generated_new || 0}
+                      {selectedUser.new || 0}
                     </span>
                   </div>
                   <div className={styles.scoreCard}>
                     <span className={styles.scoreCardLabel}>Existing Listings</span>
                     <span className={`${styles.countBadge} ${styles.totalBadge}`}>
-                      {selectedUser.listings_generated_existing || 0}
+                      {selectedUser.existing || 0}
                     </span>
                   </div>
                   <div className={`${styles.scoreCard} ${styles.scoreCardTotal}`}>
                     <span className={styles.scoreCardLabel}>Total</span>
                     <span className={`${styles.countBadge} ${styles.totalBadge}`}>
-                      {selectedUser.listings_generated || 0}
+                      {selectedUser.total || 0}
                     </span>
                   </div>
                 </div>

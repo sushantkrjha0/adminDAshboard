@@ -341,17 +341,44 @@ const adminService = {
     }
   },
   
-  // Get listing stats for admin dashboard (deal tags, listing scores, listings generated per user)
-  // Route: GET /api/admin/listing/stats
-  getListingStats: async () => {
+  // Route: GET /api/admin/listing/deal_tags
+  getDealTagsStats: async () => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/admin/listing/stats`,
+        `${API_BASE_URL}/admin/listing/deal_tags`,
         createRequestOptions('GET')
       );
       return handleResponse(response);
     } catch (error) {
-      console.error('Error fetching listing stats:', error);
+      console.error('Error fetching deal tags stats:', error);
+      throw error;
+    }
+  },
+
+  // Route: GET /api/admin/listing/scores
+  getListingScoresStats: async () => {
+    try {
+      const response = await safeFetch(
+        `${API_BASE_URL}/admin/listing/scores`,
+        createRequestOptions('GET')
+      );
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching listing scores stats:', error);
+      throw error;
+    }
+  },
+
+  // Route: GET /api/admin/listing/generated
+  getListingsGeneratedStats: async () => {
+    try {
+      const response = await safeFetch(
+        `${API_BASE_URL}/admin/listing/generated`,
+        createRequestOptions('GET')
+      );
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching listings generated stats:', error);
       throw error;
     }
   },

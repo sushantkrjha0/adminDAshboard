@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaUserPlus, FaSpinner, FaCalendar, FaClock, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import styles from './UserSignups.module.css';
 import adminService from '../../services/adminService';
@@ -13,6 +13,7 @@ const UserSignups = () => {
     monthly: 0
   });
   const [error, setError] = useState(null);
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
     fetchSignups();
@@ -20,6 +21,10 @@ const UserSignups = () => {
   }, []);
 
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     fetchSignups();
   }, [signupsPeriod]);
 

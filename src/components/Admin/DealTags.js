@@ -17,7 +17,7 @@ const DealTags = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await adminService.getListingStats();
+      const response = await adminService.getDealTagsStats();
       if (response.success) {
         setTotals(response.totals || {});
         setUsers(response.users || []);
@@ -44,21 +44,21 @@ const DealTags = () => {
         <div className={styles.statCard}>
           <div className={`${styles.statIcon} ${styles.dealIcon}`}><FaTag /></div>
           <div className={styles.statContent}>
-            <h3>{isLoading ? '—' : (totals.total_deal_tags_single || 0)}</h3>
+            <h3>{isLoading ? '—' : (totals.total_single || 0)}</h3>
             <p>Single Deal Tags</p>
           </div>
         </div>
         <div className={styles.statCard}>
           <div className={`${styles.statIcon} ${styles.dealIcon}`}><FaTag /></div>
           <div className={styles.statContent}>
-            <h3>{isLoading ? '—' : (totals.total_deal_tags_bulk || 0)}</h3>
+            <h3>{isLoading ? '—' : (totals.total_bulk || 0)}</h3>
             <p>Bulk Deal Tags</p>
           </div>
         </div>
         <div className={styles.statCard}>
           <div className={`${styles.statIcon} ${styles.dealIcon}`}><FaTag /></div>
           <div className={styles.statContent}>
-            <h3>{isLoading ? '—' : (totals.total_deal_tags || 0)}</h3>
+            <h3>{isLoading ? '—' : (totals.total || 0)}</h3>
             <p>Total Deal Tags Checked</p>
           </div>
         </div>
@@ -95,7 +95,7 @@ const DealTags = () => {
               </tr>
             </thead>
             <tbody>
-              {users.filter(u => u.deal_tags_checked > 0).map((user) => (
+              {users.filter(u => u.total > 0).map((user) => (
                 <tr key={user.user_uuid} className={styles.tableRow}>
                   <td className={styles.userCell}>
                     <span className={styles.username}>{user.username}</span>
@@ -103,14 +103,14 @@ const DealTags = () => {
                   </td>
                   <td className={styles.emailCell}>{user.email || 'N/A'}</td>
                   <td className={styles.centerCell}>
-                    <span className={styles.countBadge}>{user.deal_tags_single || 0}</span>
+                    <span className={styles.countBadge}>{user.single || 0}</span>
                   </td>
                   <td className={styles.centerCell}>
-                    <span className={styles.countBadge}>{user.deal_tags_bulk || 0}</span>
+                    <span className={styles.countBadge}>{user.bulk || 0}</span>
                   </td>
                   <td className={styles.centerCell}>
                     <span className={`${styles.countBadge} ${styles.totalBadge}`}>
-                      {user.deal_tags_checked || 0}
+                      {user.total || 0}
                     </span>
                   </td>
                 </tr>
