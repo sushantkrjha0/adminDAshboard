@@ -301,7 +301,7 @@ const adminService = {
   getActiveUsers: async (period = 'daily') => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/users/active?period=${period}`, 
+        `${API_BASE_URL}/admin/users/active?period=${period}`,
         createRequestOptions('GET')
       );
       return handleResponse(response);
@@ -316,7 +316,7 @@ const adminService = {
   getUserSignups: async (period = 'daily') => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/users?period=${period}`, 
+        `${API_BASE_URL}/admin/users?period=${period}`,
         createRequestOptions('GET')
       );
       const data = await handleResponse(response);
@@ -343,46 +343,68 @@ const adminService = {
     }
   },
   
-  // Route: GET /api/admin/listing/deal_tags
+  // Single API call to GET /api/admin/listing/stats — cached so multiple components share one request
+  _listingStatsPromise: null,
+  getListingStats: async () => {
+    if (!adminService._listingStatsPromise) {
+      adminService._listingStatsPromise = (async () => {
+        try {
+          const response = await safeFetch(
+            `${API_BASE_URL}/admin/listing/stats`,
+            createRequestOptions('GET')
+          );
+          return handleResponse(response);
+        } finally {
+          adminService._listingStatsPromise = null;
+        }
+      })();
+    }
+    return adminService._listingStatsPromise;
+  },
+
+  // Transform listing/stats response for deal tags consumers
   getDealTagsStats: async () => {
-    try {
-      const response = await safeFetch(
-        `${API_BASE_URL}/admin/listing/deal_tags`,
-        createRequestOptions('GET')
-      );
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Error fetching deal tags stats:', error);
-      throw error;
-    }
+    const data = await adminService.getListingStats();
+    if (!data.success) return data;
+    const users = (data.users || []).map(u => ({
+      user_uuid: u.user_uuid, username: u.username, email: u.email,
+      single: u.deal_tags_single || 0, bulk: u.deal_tags_bulk || 0, total: u.deal_tags_checked || 0,
+    }));
+    return {
+      success: true,
+      totals: { total_single: data.totals.total_deal_tags_single || 0, total_bulk: data.totals.total_deal_tags_bulk || 0, total: data.totals.total_deal_tags || 0 },
+      users,
+    };
   },
 
-  // Route: GET /api/admin/listing/scores
+  // Transform listing/stats response for listing scores consumers
   getListingScoresStats: async () => {
-    try {
-      const response = await safeFetch(
-        `${API_BASE_URL}/admin/listing/scores`,
-        createRequestOptions('GET')
-      );
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Error fetching listing scores stats:', error);
-      throw error;
-    }
+    const data = await adminService.getListingStats();
+    if (!data.success) return data;
+    const users = (data.users || []).map(u => ({
+      user_uuid: u.user_uuid, username: u.username, email: u.email,
+      single: u.single_listing_scores || 0, bulk: u.bulk_listing_scores || 0, total: u.total_listing_scores || 0,
+    }));
+    return {
+      success: true,
+      totals: { total_single: data.totals.total_single_listing_scores || 0, total_bulk: data.totals.total_bulk_listing_scores || 0, total: data.totals.total_listing_scores || 0 },
+      users,
+    };
   },
 
-  // Route: GET /api/admin/listing/generated
+  // Transform listing/stats response for listings generated consumers
   getListingsGeneratedStats: async () => {
-    try {
-      const response = await safeFetch(
-        `${API_BASE_URL}/admin/listing/generated`,
-        createRequestOptions('GET')
-      );
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Error fetching listings generated stats:', error);
-      throw error;
-    }
+    const data = await adminService.getListingStats();
+    if (!data.success) return data;
+    const users = (data.users || []).map(u => ({
+      user_uuid: u.user_uuid, username: u.username, email: u.email,
+      single: u.listings_generated_single || 0, bulk: u.listings_generated_bulk || 0, total: u.listings_generated || 0,
+    }));
+    return {
+      success: true,
+      totals: { total_single: data.totals.total_listings_generated_single || 0, total_bulk: data.totals.total_listings_generated_bulk || 0, total: data.totals.total_listings_generated || 0 },
+      users,
+    };
   },
 
   // Force refresh of credit requests - to be called manually after approve/reject

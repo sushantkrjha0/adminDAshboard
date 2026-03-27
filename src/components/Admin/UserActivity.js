@@ -15,8 +15,6 @@ const UserActivity = () => {
   const [error, setError] = useState(null);
   const isInitialMount = useRef(true);
 
-  const isInitialMount = React.useRef(true);
-
   // On mount: fetch all stats (3 periods) in one go
   useEffect(() => {
     fetchAllStats();
