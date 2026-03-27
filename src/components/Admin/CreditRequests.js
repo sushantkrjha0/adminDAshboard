@@ -32,11 +32,15 @@ const CreditRequests = () => {
     setError(null);
 
     try {
-      // Single API call — fetch all, then filter client-side
-      const response = await adminService.getCreditRequests(null);
-      const allData = response.credit_requests || [];
+      // Fetch all once, then filter client-side — avoids a second API call
+      const allRequests = await adminService.getCreditRequests(null);
+      const allData = allRequests.credit_requests || [];
 
-      // Calculate stats from full dataset
+      const filtered = currentStatus !== 'all'
+        ? allData.filter(req => req.status === currentStatus)
+        : allData;
+      setCreditRequests(filtered);
+
       setStats({
         pending: allData.filter(req => req.status === 'pending').length,
         approved: allData.filter(req => req.status === 'approved').length,

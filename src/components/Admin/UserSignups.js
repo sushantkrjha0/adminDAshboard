@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaUserPlus, FaSpinner, FaCalendar, FaClock, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import styles from './UserSignups.module.css';
 import adminService from '../../services/adminService';
@@ -18,6 +18,7 @@ const UserSignups = () => {
     monthly: 0
   });
   const [error, setError] = useState(null);
+  const isInitialMount = useRef(true);
 
   const isInitialMount = React.useRef(true);
 
@@ -28,6 +29,10 @@ const UserSignups = () => {
 
   // On period change (skip initial mount since fetchAllStats covers it)
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
