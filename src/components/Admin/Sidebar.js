@@ -13,7 +13,6 @@ import {
   FaClock,
   FaCommentDots,
   FaShareAlt,
-  FaChartLine,
   FaUserPlus,
   FaSignOutAlt,
   FaListAlt,
@@ -75,13 +74,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       description: 'Manage user accounts',
       subItems: [
         {
-          id: 'user-activity',
-          label: 'User Activity',
-          icon: <FaChartLine />,
-          path: '/admin/users/activity',
-          description: 'View user activity and generation history'
-        },
-        {
           id: 'user-signups',
           label: 'User Signups',
           icon: <FaUserPlus />,
@@ -92,31 +84,31 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     },
     {
       id: 'listing',
-      label: 'Listing',
+      label: 'User Activity',
       icon: <FaListAlt />,
       path: '/admin/listing',
-      description: 'Manage listings and tags',
+      description: 'View per-user activity: deal tags, listing scores, generations',
       subItems: [
         {
           id: 'deal-tags',
           label: 'Deal Tags',
           icon: <FaTag />,
           path: '/admin/listing/deal-tags',
-          description: 'Manage deal tags'
+          description: 'Deal tag checks per user'
         },
         {
           id: 'listing-score',
           label: 'Listing Score',
           icon: <FaStar />,
           path: '/admin/listing/listing-score',
-          description: 'View listing scores'
+          description: 'Listing scores per user'
         },
         {
           id: 'generated-listing',
           label: 'Generated Listing',
           icon: <FaFileAlt />,
           path: '/admin/listing/generated-listing',
-          description: 'View generated listings'
+          description: 'Listings generated per user'
         }
       ]
     },

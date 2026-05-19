@@ -332,7 +332,22 @@ const adminService = {
           phone_number: user.phone_number,
           created_at: user.created_at,
           onboarding_complete: user.onboarding_complete,
-          user_type: user.user_type
+          user_type: user.user_type,
+          account_type: user.account_type,
+          signup_method: user.signup_method,
+          google_profile: user.google_profile,
+          picture: user.picture,
+          current_credits: user.current_credits,
+          company_name: user.company_name,
+          job_title: user.job_title,
+          location: user.location,
+          experience: user.experience,
+          agency_size: user.agency_size,
+          amazon_status: user.amazon_status,
+          amazon_store_name: user.amazon_store_name,
+          amazon_seller_id: user.amazon_seller_id,
+          amazon_product_count: user.amazon_product_count,
+          last_updated: user.last_updated
         })),
         start_date: data.start_date,
         end_date: data.end_date
@@ -369,10 +384,17 @@ const adminService = {
     const users = (data.users || []).map(u => ({
       user_uuid: u.user_uuid, username: u.username, email: u.email,
       single: u.deal_tags_single || 0, bulk: u.deal_tags_bulk || 0, total: u.deal_tags_checked || 0,
+      failed: u.deal_tags_failed || 0,
+      last_activity_at_ist: u.last_deal_tag_at_ist || null,
     }));
     return {
       success: true,
-      totals: { total_single: data.totals.total_deal_tags_single || 0, total_bulk: data.totals.total_deal_tags_bulk || 0, total: data.totals.total_deal_tags || 0 },
+      totals: {
+        total_single: data.totals.total_deal_tags_single || 0,
+        total_bulk: data.totals.total_deal_tags_bulk || 0,
+        total: data.totals.total_deal_tags || 0,
+        total_failed: data.totals.total_deal_tags_failed || 0,
+      },
       users,
     };
   },
@@ -384,10 +406,17 @@ const adminService = {
     const users = (data.users || []).map(u => ({
       user_uuid: u.user_uuid, username: u.username, email: u.email,
       single: u.single_listing_scores || 0, bulk: u.bulk_listing_scores || 0, total: u.total_listing_scores || 0,
+      failed: u.listing_scores_failed || 0,
+      last_activity_at_ist: u.last_listing_score_at_ist || null,
     }));
     return {
       success: true,
-      totals: { total_single: data.totals.total_single_listing_scores || 0, total_bulk: data.totals.total_bulk_listing_scores || 0, total: data.totals.total_listing_scores || 0 },
+      totals: {
+        total_single: data.totals.total_single_listing_scores || 0,
+        total_bulk: data.totals.total_bulk_listing_scores || 0,
+        total: data.totals.total_listing_scores || 0,
+        total_failed: data.totals.total_listing_scores_failed || 0,
+      },
       users,
     };
   },
@@ -399,12 +428,35 @@ const adminService = {
     const users = (data.users || []).map(u => ({
       user_uuid: u.user_uuid, username: u.username, email: u.email,
       single: u.listings_generated_single || 0, bulk: u.listings_generated_bulk || 0, total: u.listings_generated || 0,
+      last_activity_at_ist: u.last_listing_at_ist || null,
     }));
     return {
       success: true,
-      totals: { total_single: data.totals.total_listings_generated_single || 0, total_bulk: data.totals.total_listings_generated_bulk || 0, total: data.totals.total_listings_generated || 0 },
+      totals: {
+        total_single: data.totals.total_listings_generated_single || 0,
+        total_bulk: data.totals.total_listings_generated_bulk || 0,
+        total: data.totals.total_listings_generated || 0,
+      },
       users,
     };
+  },
+
+  // Get a single user's full activity (generations + listing scores + deal tags)
+  // Route: GET /api/admin/user/:user_uuid/activity?limit=50 (admin_dashboard module)
+  getUserActivity: async (userUuid, limit = 50) => {
+    if (!userUuid) {
+      throw new Error('userUuid is required');
+    }
+    try {
+      const response = await safeFetch(
+        `${API_BASE_URL}/admin/user/${encodeURIComponent(userUuid)}/activity?limit=${limit}`,
+        createRequestOptions('GET')
+      );
+      return handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+      throw error;
+    }
   },
 
   // Force refresh of credit requests - to be called manually after approve/reject

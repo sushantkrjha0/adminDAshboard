@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FaFileAlt, FaSpinner, FaSync, FaTimes } from 'react-icons/fa';
+import { FaFileAlt, FaSpinner, FaSync, FaClock } from 'react-icons/fa';
 import styles from './Listing.module.css';
 import adminService from '../../services/adminService';
+import { formatIst } from '../../utils/dateFormat';
+import UserActivityModal from './UserActivityModal';
+import Pagination, { usePagination } from './Pagination';
 
 const GeneratedListing = () => {
   const [users, setUsers] = useState([]);
@@ -29,6 +32,9 @@ const GeneratedListing = () => {
       setIsLoading(false);
     }
   };
+
+  const filteredUsers = users.filter(u => (u.total || 0) > 0);
+  const { pageItems: pagedUsers, page, setPage, totalPages, total } = usePagination(filteredUsers);
 
   return (
     <div className={styles.container}>
@@ -90,15 +96,22 @@ const GeneratedListing = () => {
               <tr>
                 <th>User</th>
                 <th>Email</th>
-                <th className={styles.centerCell}>Single Listings Generated</th>
-                <th className={styles.centerCell}>Bulk Listings Generated</th>
+                <th className={styles.centerCell}>Single</th>
+                <th className={styles.centerCell}>Bulk</th>
                 <th className={styles.centerCell}>Total</th>
+                <th>Last Activity (IST)</th>
                 <th className={styles.centerCell}>New vs Existing</th>
               </tr>
             </thead>
             <tbody>
-              {users.filter(u => u.total > 0).map((user) => (
-                <tr key={user.user_uuid} className={styles.tableRow}>
+              {pagedUsers.map((user) => (
+                <tr
+                  key={user.user_uuid}
+                  className={styles.tableRow}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setSelectedUser(user)}
+                  title="Click to see this user's full activity"
+                >
                   <td className={styles.userCell}>
                     <span className={styles.username}>{user.username}</span>
                     <small className={styles.userId}>{user.user_uuid}</small>
@@ -115,11 +128,17 @@ const GeneratedListing = () => {
                       {user.total || 0}
                     </span>
                   </td>
+                  <td>
+                    <FaClock style={{ marginRight: '0.4rem', color: '#667eea', fontSize: '0.85rem' }} />
+                    <span style={{ fontSize: '0.85rem', color: '#4a5568' }}>
+                      {formatIst(user.last_activity_at_ist)}
+                    </span>
+                  </td>
                   <td className={styles.centerCell}>
                     <span
                       className={`${styles.countBadge} ${styles.totalBadge} ${styles.clickableBadge}`}
-                      onClick={() => setSelectedUser(user)}
-                      title="Click to see new vs existing breakdown"
+                      onClick={(e) => { e.stopPropagation(); setSelectedUser(user); }}
+                      title="Click to see full activity"
                     >
                       View
                     </span>
@@ -128,52 +147,22 @@ const GeneratedListing = () => {
               ))}
             </tbody>
           </table>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={setPage}
+            label="users"
+          />
         </div>
       )}
 
-      {/* New vs Existing popup */}
       {selectedUser && (
-        <div className={styles.modalOverlay} onClick={() => setSelectedUser(null)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <div className={styles.modalTitle}>
-                <span className={styles.modalTitleIcon}><FaFileAlt /></span>
-                <h2>New vs Existing Breakdown</h2>
-              </div>
-              <button className={styles.modalClose} onClick={() => setSelectedUser(null)}>
-                <FaTimes />
-              </button>
-            </div>
-            <div className={styles.modalBody}>
-              <div className={styles.userScoreDetail}>
-                <div className={styles.userScoreHeader}>
-                  <span className={styles.username}>{selectedUser.username}</span>
-                  <small className={styles.userId}>{selectedUser.email || selectedUser.user_uuid}</small>
-                </div>
-                <div className={styles.scoreBreakdownCards}>
-                  <div className={styles.scoreCard}>
-                    <span className={styles.scoreCardLabel}>New Listings</span>
-                    <span className={`${styles.countBadge} ${styles.genBadge}`}>
-                      {selectedUser.new || 0}
-                    </span>
-                  </div>
-                  <div className={styles.scoreCard}>
-                    <span className={styles.scoreCardLabel}>Existing Listings</span>
-                    <span className={`${styles.countBadge} ${styles.totalBadge}`}>
-                      {selectedUser.existing || 0}
-                    </span>
-                  </div>
-                  <div className={`${styles.scoreCard} ${styles.scoreCardTotal}`}>
-                    <span className={styles.scoreCardLabel}>Total</span>
-                    <span className={`${styles.countBadge} ${styles.totalBadge}`}>
-                      {selectedUser.total || 0}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <UserActivityModal
+          userUuid={selectedUser.user_uuid}
+          initialTab="generations"
+          onClose={() => setSelectedUser(null)}
+        />
       )}
     </div>
   );

@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { FaTag, FaSpinner, FaSync } from 'react-icons/fa';
+import { FaTag, FaSpinner, FaSync, FaClock } from 'react-icons/fa';
 import styles from './Listing.module.css';
 import adminService from '../../services/adminService';
+import { formatIst } from '../../utils/dateFormat';
+import UserActivityModal from './UserActivityModal';
+import Pagination, { usePagination } from './Pagination';
 
 const DealTags = () => {
   const [users, setUsers] = useState([]);
   const [totals, setTotals] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -28,6 +32,9 @@ const DealTags = () => {
       setIsLoading(false);
     }
   };
+
+  const filteredUsers = users.filter(u => (u.total || 0) > 0 || (u.failed || 0) > 0);
+  const { pageItems: pagedUsers, page, setPage, totalPages, total } = usePagination(filteredUsers);
 
   return (
     <div className={styles.container}>
@@ -62,6 +69,17 @@ const DealTags = () => {
             <p>Total Deal Tags Checked</p>
           </div>
         </div>
+        {(totals.total_failed || 0) > 0 && (
+          <div className={styles.statCard}>
+            <div className={`${styles.statIcon} ${styles.dealIcon}`} style={{ background: 'linear-gradient(135deg, #fc8181 0%, #c53030 100%)' }}>
+              <FaTag />
+            </div>
+            <div className={styles.statContent}>
+              <h3>{totals.total_failed}</h3>
+              <p>Failed Tasks</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {error && <div className={styles.errorMessage}>{error}</div>}
@@ -91,12 +109,20 @@ const DealTags = () => {
                 <th>Email</th>
                 <th className={styles.centerCell}>Single Deal Tags</th>
                 <th className={styles.centerCell}>Bulk Deal Tags</th>
-                <th className={styles.centerCell}>Total Deal Tags</th>
+                <th className={styles.centerCell}>Total</th>
+                <th className={styles.centerCell}>Failed</th>
+                <th>Last Activity (IST)</th>
               </tr>
             </thead>
             <tbody>
-              {users.filter(u => u.total > 0).map((user) => (
-                <tr key={user.user_uuid} className={styles.tableRow}>
+              {pagedUsers.map((user) => (
+                <tr
+                  key={user.user_uuid}
+                  className={styles.tableRow}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setSelectedUser(user)}
+                  title="Click to see this user's full activity"
+                >
                   <td className={styles.userCell}>
                     <span className={styles.username}>{user.username}</span>
                     <small className={styles.userId}>{user.user_uuid}</small>
@@ -113,11 +139,41 @@ const DealTags = () => {
                       {user.total || 0}
                     </span>
                   </td>
+                  <td className={styles.centerCell}>
+                    {(user.failed || 0) > 0 ? (
+                      <span className={styles.countBadge} style={{ background: '#fed7d7', color: '#c53030' }}>
+                        {user.failed}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#a0aec0' }}>—</span>
+                    )}
+                  </td>
+                  <td>
+                    <FaClock style={{ marginRight: '0.4rem', color: '#667eea', fontSize: '0.85rem' }} />
+                    <span style={{ fontSize: '0.85rem', color: '#4a5568' }}>
+                      {formatIst(user.last_activity_at_ist)}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={setPage}
+            label="users"
+          />
         </div>
+      )}
+
+      {selectedUser && (
+        <UserActivityModal
+          userUuid={selectedUser.user_uuid}
+          initialTab="deal_tags"
+          onClose={() => setSelectedUser(null)}
+        />
       )}
     </div>
   );
