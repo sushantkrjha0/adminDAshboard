@@ -5,6 +5,7 @@ import adminService from '../../services/adminService';
 import { formatIst } from '../../utils/dateFormat';
 import UserActivityModal from './UserActivityModal';
 import Pagination, { usePagination } from './Pagination';
+import SearchInput, { filterByUserSearch } from './SearchInput';
 
 const ListingScore = () => {
   const [users, setUsers] = useState([]);
@@ -12,6 +13,7 @@ const ListingScore = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -33,7 +35,10 @@ const ListingScore = () => {
     }
   };
 
-  const filteredUsers = users.filter(u => (u.total || 0) > 0 || (u.failed || 0) > 0);
+  const filteredUsers = filterByUserSearch(
+    users.filter(u => (u.total || 0) > 0 || (u.failed || 0) > 0),
+    searchQuery,
+  );
   const { pageItems: pagedUsers, page, setPage, totalPages, total } = usePagination(filteredUsers);
 
   return (
@@ -97,10 +102,13 @@ const ListingScore = () => {
       ) : (
         <div className={styles.tableContainer}>
           <div className={styles.tableHeader}>
-            <h2>Per-User Listing Score Breakdown</h2>
-            <button className={styles.refreshButton} onClick={fetchData}>
-              <FaSync className={styles.refreshIcon} /> Refresh
-            </button>
+            <SearchInput value={searchQuery} onChange={setSearchQuery} />
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <h2>Per-User Listing Score Breakdown</h2>
+              <button className={styles.refreshButton} onClick={fetchData}>
+                <FaSync className={styles.refreshIcon} /> Refresh
+              </button>
+            </div>
           </div>
           <table className={styles.listingTable}>
             <thead>

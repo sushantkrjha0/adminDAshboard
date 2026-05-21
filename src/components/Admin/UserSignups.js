@@ -20,6 +20,7 @@ import {
 import styles from './UserSignups.module.css';
 import adminService from '../../services/adminService';
 import Pagination, { usePagination } from './Pagination';
+import SearchInput, { filterByUserSearch } from './SearchInput';
 
 const filterValidSignups = (signups) =>
   (signups || []).filter(
@@ -51,6 +52,7 @@ const UserSignups = () => {
   });
   const [error, setError] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const isInitialMount = useRef(true);
 
   // On mount: fetch all three period buckets in parallel
@@ -127,7 +129,8 @@ const UserSignups = () => {
   };
 
   const signups = signupsByPeriod[signupsPeriod] || [];
-  const { pageItems: pagedSignups, page, setPage, totalPages, total } = usePagination(signups);
+  const filteredSignups = filterByUserSearch(signups, searchQuery);
+  const { pageItems: pagedSignups, page, setPage, totalPages, total } = usePagination(filteredSignups);
 
   return (
     <div className={styles.container}>
@@ -211,6 +214,9 @@ const UserSignups = () => {
               {signupsPeriod === 'daily' ? '24 hours' : signupsPeriod === 'weekly' ? '7 days' : '30 days'}
               {'  •  Click any row for full details'}
             </p>
+            <div style={{ marginTop: '0.75rem' }}>
+              <SearchInput value={searchQuery} onChange={setSearchQuery} />
+            </div>
           </div>
           <table className={styles.usersTable}>
             <thead>
