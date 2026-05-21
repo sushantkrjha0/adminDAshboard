@@ -42,6 +42,7 @@ const UserSignups = () => {
     daily: [],
     weekly: [],
     monthly: [],
+    all: [],
   });
   const [isLoadingSignups, setIsLoadingSignups] = useState(false);
   const [signupsPeriod, setSignupsPeriod] = useState('daily');
@@ -49,6 +50,7 @@ const UserSignups = () => {
     daily: 0,
     weekly: 0,
     monthly: 0,
+    all: 0,
   });
   const [error, setError] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -96,25 +98,29 @@ const UserSignups = () => {
     try {
       setIsLoadingSignups(true);
       setError(null);
-      const [dailyRes, weeklyRes, monthlyRes] = await Promise.all([
+      const [dailyRes, weeklyRes, monthlyRes, allRes] = await Promise.all([
         adminService.getUserSignups('daily'),
         adminService.getUserSignups('weekly'),
         adminService.getUserSignups('monthly'),
+        adminService.getUserSignups('all'),
       ]);
 
       const validDaily = dailyRes.success ? filterValidSignups(dailyRes.signups) : [];
       const validWeekly = weeklyRes.success ? filterValidSignups(weeklyRes.signups) : [];
       const validMonthly = monthlyRes.success ? filterValidSignups(monthlyRes.signups) : [];
+      const validAll = allRes.success ? filterValidSignups(allRes.signups) : [];
 
       setSignupsByPeriod({
         daily: validDaily,
         weekly: validWeekly,
         monthly: validMonthly,
+        all: validAll,
       });
       setSignupsStats({
         daily: validDaily.length,
         weekly: validWeekly.length,
         monthly: validMonthly.length,
+        all: validAll.length,
       });
     } catch (err) {
       console.error('Error fetching user signups stats:', err);
@@ -170,6 +176,14 @@ const UserSignups = () => {
             <p>Monthly Signups</p>
           </div>
         </div>
+
+        <div className={styles.statCard}>
+          <div className={styles.statIcon}><FaUserPlus /></div>
+          <div className={styles.statContent}>
+            <h3>{signupsStats.all}</h3>
+            <p>All Users</p>
+          </div>
+        </div>
       </div>
 
       {/* Period Tabs */}
@@ -195,6 +209,13 @@ const UserSignups = () => {
           <FaCalendar className={styles.tabIcon} />
           Monthly Signups ({signupsStats.monthly})
         </button>
+        <button
+          className={`${styles.tabButton} ${signupsPeriod === 'all' ? styles.activeTab : ''}`}
+          onClick={() => handlePeriodChange('all')}
+        >
+          <FaUserPlus className={styles.tabIcon} />
+          All Users ({signupsStats.all})
+        </button>
       </div>
 
       {error && <div className={styles.errorMessage}>{error}</div>}
@@ -208,10 +229,17 @@ const UserSignups = () => {
       ) : signups.length > 0 ? (
         <div className={styles.tableContainer}>
           <div className={styles.signupsHeader}>
-            <h2>New Signups - {signupsPeriod.charAt(0).toUpperCase() + signupsPeriod.slice(1)}</h2>
+            <h2>
+              {signupsPeriod === 'all'
+                ? 'All Registered Users'
+                : `New Signups - ${signupsPeriod.charAt(0).toUpperCase() + signupsPeriod.slice(1)}`}
+            </h2>
             <p>
-              Users who registered in the last{' '}
-              {signupsPeriod === 'daily' ? '24 hours' : signupsPeriod === 'weekly' ? '7 days' : '30 days'}
+              {signupsPeriod === 'all'
+                ? 'Every user who has registered to date'
+                : `Users who registered in the last ${
+                    signupsPeriod === 'daily' ? '24 hours' : signupsPeriod === 'weekly' ? '7 days' : '30 days'
+                  }`}
               {'  •  Click any row for full details'}
             </p>
             <div style={{ marginTop: '0.75rem' }}>
