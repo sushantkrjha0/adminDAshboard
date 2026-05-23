@@ -1,16 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   FaCoins,
   FaUsers,
   FaChartBar,
   FaCog,
-  FaBars,
   FaTimes,
-  FaCreditCard,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaClock,
   FaCommentDots,
   FaShareAlt,
   FaUserPlus,
@@ -35,36 +30,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       icon: <FaChartBar />,
       path: '/admin/dashboard',
       description: 'Overview and statistics'
-    },
-    {
-      id: 'credit-requests',
-      label: 'Credit Requests',
-      icon: <FaCoins />,
-      path: '/admin/credit-requests',
-      description: 'Manage user credit requests',
-      subItems: [
-        {
-          id: 'pending',
-          label: 'Pending Requests',
-          icon: <FaClock />,
-          path: '/admin/credit-requests?status=pending',
-          description: 'Review pending credit requests'
-        },
-        {
-          id: 'approved',
-          label: 'Approved Requests',
-          icon: <FaCheckCircle />,
-          path: '/admin/credit-requests?status=approved',
-          description: 'View approved requests'
-        },
-        {
-          id: 'rejected',
-          label: 'Rejected Requests',
-          icon: <FaTimesCircle />,
-          path: '/admin/credit-requests?status=rejected',
-          description: 'View rejected requests'
-        }
-      ]
     },
     {
       id: 'users',

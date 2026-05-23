@@ -88,9 +88,6 @@ const AdminLayout = () => {
 
 // Helper function to get page title from pathname
 const getPageTitle = (pathname) => {
-  if (pathname.includes('credit-requests')) {
-    return 'Credit Request Management';
-  }
   if (pathname.includes('users')) {
     return 'User Management';
   }

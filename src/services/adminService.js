@@ -97,29 +97,58 @@ const safeFetch = async (url, options, timeout = 30000) => {
   }
 };
 
-// Track if we have a request in progress to prevent duplicate calls
-let requestsInProgress = {};
+// Generic GET/POST wrappers that handle the safeFetch + createRequestOptions + handleResponse
+// chain so each endpoint helper below stays a one-liner. Errors are logged with a contextual
+// label and rethrown — same behaviour the old per-method try/catch blocks had.
+const apiGet = async (path, label) => {
+  try {
+    const response = await safeFetch(`${API_BASE_URL}${path}`, createRequestOptions('GET'));
+    return await handleResponse(response);
+  } catch (error) {
+    console.error(`Error ${label}:`, error);
+    throw error;
+  }
+};
+
+// Reshape the per-user fields from /admin/listing/stats into the {single, bulk, total, failed?, last_activity_at_ist}
+// envelope each breakdown page expects. `keys` maps the generic names → backend field names.
+const _mapListingCategoryStats = (data, keys) => {
+  if (!data || !data.success) return data;
+  const totals = data.totals || {};
+  const users = (data.users || []).map(u => {
+    const row = {
+      user_uuid: u.user_uuid, username: u.username, email: u.email,
+      single: u[keys.single] || 0,
+      bulk: u[keys.bulk] || 0,
+      total: u[keys.total] || 0,
+      last_activity_at_ist: u[keys.lastActivity] || null,
+    };
+    if (keys.failed) row.failed = u[keys.failed] || 0;
+    return row;
+  });
+  const outTotals = {
+    total_single: totals[keys.totalsSingle] || 0,
+    total_bulk: totals[keys.totalsBulk] || 0,
+    total: totals[keys.totalsTotal] || 0,
+  };
+  if (keys.totalsFailed) outTotals.total_failed = totals[keys.totalsFailed] || 0;
+  return { success: true, totals: outTotals, users };
+};
 
 const adminService = {
   // Check if admin is logged in
-  isAdmin: () => {
-    return !!localStorage.getItem('userUuid');
-  },
+  isAdmin: () => !!localStorage.getItem('userUuid'),
 
-  // Admin login
+  // Admin login — handles its own POST since it also writes to localStorage on success.
   login: async (email, password) => {
     try {
       const response = await safeFetch(
-        `${API_BASE_URL}/auth/login`, 
+        `${API_BASE_URL}/auth/login`,
         createRequestOptions('POST', { email, password })
       );
-      
       const data = await handleResponse(response);
-      
-      // Store UUID and email in localStorage
       localStorage.setItem('userUuid', data.uuid);
       localStorage.setItem('adminEmail', email);
-      
       return data;
     } catch (error) {
       console.error('Login error:', error);
@@ -127,248 +156,31 @@ const adminService = {
     }
   },
 
-  // Get all credit requests with optional status filter - with request deduplication
-  // Route: GET /api/admin/credit_requests (admin_dashboard module)
-  getCreditRequests: async (status = null, forceRefresh = false) => {
-    const requestKey = `getCreditRequests_${status || 'all'}`;
-    
-    // If a request with this key is already in progress and we're not forcing a refresh,
-    // return a promise that will resolve when the original request completes
-    if (!forceRefresh && requestsInProgress[requestKey]) {
-      console.log(`Request already in progress for ${requestKey}, reusing existing promise`);
-      return requestsInProgress[requestKey];
-    }
-    
-    // Create a new promise for this request
-    const requestPromise = (async () => {
-      try {
-        const url = `${API_BASE_URL}/admin/credit_requests${status ? `?status=${status}` : ''}`;
-        console.log(`Fetching credit requests from: ${url}`);
-        
-        const requestOptions = createRequestOptions('GET');
-        console.log('With options:', JSON.stringify(requestOptions));
-        
-        const response = await safeFetch(url, requestOptions);
-        console.log('Response received:', response.status, response.statusText);
-        
-        const data = await handleResponse(response);
-        console.log('Data received:', data);
-        
-        // Validate response structure
-        if (!data || !Array.isArray(data.credit_requests)) {
-          console.error('Invalid API response format:', data);
-          return { credit_requests: [] }; // Return a safe default
-        }
-        
-        // Transform/normalize data for consistency
-        const normalizedRequests = data.credit_requests.map(request => ({
-          user_uuid: request.user_uuid || '',
-          username: request.username || 'Unknown User',
-          email: request.email || '',
-          current_credit: typeof request.current_credit === 'number' ? request.current_credit : 0,
-          requested_credit: typeof request.requested_credit === 'number' ? request.requested_credit : 0,
-          status: request.status || 'unknown',
-          requested_at: request.requested_at || null,
-          processed_at: request.processed_at || null,
-          processed_by: request.processed_by || null,
-          notes: request.notes || null,
-        }));
-        
-        return { credit_requests: normalizedRequests };
-      } catch (error) {
-        console.error('Error fetching credit requests:', error);
-        // Return empty array instead of throwing to prevent UI crashes
-        return { credit_requests: [], error: error.message };
-      } finally {
-        // Remove from in-progress requests when done
-        delete requestsInProgress[requestKey];
-      }
-    })();
-    
-    // Store the promise so we can reuse it for duplicate calls
-    requestsInProgress[requestKey] = requestPromise;
-    
-    return requestPromise;
-  },
-
-  // Approve a credit request
-  // Route: POST /api/admin/credit_requests/:user_id/approve (admin_dashboard module)
-  approveCreditRequest: async (userUuid, notes = '') => {
-    try {
-      const response = await safeFetch(
-        `${API_BASE_URL}/admin/credit_requests/${userUuid}/approve`,
-        createRequestOptions('POST', { notes })
-      );
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Error approving credit request:', error);
-      throw error;
-    }
-  },
-
-  // Reject a credit request
-  // Route: POST /api/admin/credit_requests/:user_id/reject (admin_dashboard module)
-  rejectCreditRequest: async (userUuid, notes = '') => {
-    try {
-      const response = await safeFetch(
-        `${API_BASE_URL}/admin/credit_requests/${userUuid}/reject`, 
-        createRequestOptions('POST', { notes })
-      );
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Error rejecting credit request:', error);
-      throw error;
-    }
-  },
-
-  // Get admin dashboard statistics
-  getStatistics: async () => {
-    try {
-      const response = await safeFetch(
-        `${API_BASE_URL}/auth/statistics`, 
-        createRequestOptions('GET')
-      );
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Error fetching statistics:', error);
-      throw error;
-    }
-  },
-
-  // Get admin profile
-  getProfile: async () => {
-    try {
-      const response = await safeFetch(
-        `${API_BASE_URL}/auth/profile`, 
-        createRequestOptions('GET')
-      );
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      throw error;
-    }
-  },
-
-  // Get all users for admin dashboard
-  // Route: GET /api/admin/users
-  // Route: GET /api/admin/users (admin_dashboard module)
-  getAllUsers: async () => {
-    try {
-      const response = await safeFetch(
-        `${API_BASE_URL}/admin/users`,
-        createRequestOptions('GET')
-      );
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Error fetching all users:', error);
-      throw error;
-    }
+  // Get users for the admin dashboard. Without `period` (or with 'all') returns every user.
+  // With period=daily/weekly/monthly the backend restricts by IST calendar boundary.
+  // Route: GET /api/admin/users[?period=...] (admin_dashboard module)
+  getAllUsers: (period = null) => {
+    const path = period
+      ? `/admin/users?period=${encodeURIComponent(period)}`
+      : '/admin/users';
+    return apiGet(path, 'fetching users');
   },
 
   // Get all referrals for admin dashboard
-  // Route: GET /api/auth/referrals (admin_dashboard module)
-  getAllReferrals: async () => {
-    try {
-      const response = await safeFetch(
-        `${API_BASE_URL}/admin/referrals`,
-        createRequestOptions('GET')
-      );
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Error fetching all referrals:', error);
-      throw error;
-    }
-  },
+  // Route: GET /api/admin/referrals (admin_dashboard module)
+  getAllReferrals: () => apiGet('/admin/referrals', 'fetching all referrals'),
 
   // Get all feedback for admin dashboard
   // Route: GET /api/admin/feedback (admin_dashboard module)
-  // Route: GET /api/admin/feedback
-  getAllFeedback: async () => {
-    try {
-      const response = await safeFetch(
-        `${API_BASE_URL}/admin/feedback`,
-        createRequestOptions('GET')
-      );
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Error fetching all feedback:', error);
-      throw error;
-    }
-  },
+  getAllFeedback: () => apiGet('/admin/feedback', 'fetching all feedback'),
 
-  // Get active users based on generation activity
-  // Route: GET /api/admin/users/active?period={period} (admin_dashboard module)
-  getActiveUsers: async (period = 'daily') => {
-    try {
-      const response = await safeFetch(
-        `${API_BASE_URL}/admin/users/active?period=${period}`,
-        createRequestOptions('GET')
-      );
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Error fetching active users:', error);
-      throw error;
-    }
-  },
-
-  // Get user signups based on period (uses existing /users endpoint with period parameter)
-  // Route: GET /api/auth/users?period={period} (admin_dashboard module)
-  getUserSignups: async (period = 'daily') => {
-    try {
-      const response = await safeFetch(
-        `${API_BASE_URL}/admin/users?period=${period}`,
-        createRequestOptions('GET')
-      );
-      const data = await handleResponse(response);
-      // Transform response to match expected format
-      return {
-        success: data.success,
-        period: data.period || period,
-        total_signups: data.total_signups || data.total_users || 0,
-        signups: (data.users || []).map(user => ({
-          user_uuid: user.user_uuid,
-          username: user.username,
-          email: user.email,
-          phone_number: user.phone_number,
-          created_at: user.created_at,
-          onboarding_complete: user.onboarding_complete,
-          user_type: user.user_type,
-          account_type: user.account_type,
-          signup_method: user.signup_method,
-          google_profile: user.google_profile,
-          picture: user.picture,
-          current_credits: user.current_credits,
-          company_name: user.company_name,
-          job_title: user.job_title,
-          location: user.location,
-          experience: user.experience,
-          agency_size: user.agency_size,
-          amazon_status: user.amazon_status,
-          amazon_store_name: user.amazon_store_name,
-          amazon_seller_id: user.amazon_seller_id,
-          amazon_product_count: user.amazon_product_count,
-          last_updated: user.last_updated
-        })),
-        start_date: data.start_date,
-        end_date: data.end_date
-      };
-    } catch (error) {
-      console.error('Error fetching user signups:', error);
-      throw error;
-    }
-  },
-  
-  // Single API call to GET /api/admin/listing/stats — cached so multiple components share one request
+  // Single API call to GET /api/admin/listing/stats — cached so multiple components share one in-flight request
   _listingStatsPromise: null,
   getListingStats: async () => {
     if (!adminService._listingStatsPromise) {
       adminService._listingStatsPromise = (async () => {
         try {
-          const response = await safeFetch(
-            `${API_BASE_URL}/admin/listing/stats`,
-            createRequestOptions('GET')
-          );
-          return handleResponse(response);
+          return await apiGet('/admin/listing/stats', 'fetching listing stats');
         } finally {
           adminService._listingStatsPromise = null;
         }
@@ -377,113 +189,36 @@ const adminService = {
     return adminService._listingStatsPromise;
   },
 
-  // Transform listing/stats response for deal tags consumers
-  getDealTagsStats: async () => {
-    const data = await adminService.getListingStats();
-    if (!data.success) return data;
-    const users = (data.users || []).map(u => ({
-      user_uuid: u.user_uuid, username: u.username, email: u.email,
-      single: u.deal_tags_single || 0, bulk: u.deal_tags_bulk || 0, total: u.deal_tags_checked || 0,
-      failed: u.deal_tags_failed || 0,
-      last_activity_at_ist: u.last_deal_tag_at_ist || null,
-    }));
-    return {
-      success: true,
-      totals: {
-        total_single: data.totals.total_deal_tags_single || 0,
-        total_bulk: data.totals.total_deal_tags_bulk || 0,
-        total: data.totals.total_deal_tags || 0,
-        total_failed: data.totals.total_deal_tags_failed || 0,
-      },
-      users,
-    };
-  },
+  getDealTagsStats: async () => _mapListingCategoryStats(await adminService.getListingStats(), {
+    single: 'deal_tags_single', bulk: 'deal_tags_bulk', total: 'deal_tags_checked',
+    failed: 'deal_tags_failed', lastActivity: 'last_deal_tag_at_ist',
+    totalsSingle: 'total_deal_tags_single', totalsBulk: 'total_deal_tags_bulk',
+    totalsTotal: 'total_deal_tags', totalsFailed: 'total_deal_tags_failed',
+  }),
 
-  // Transform listing/stats response for listing scores consumers
-  getListingScoresStats: async () => {
-    const data = await adminService.getListingStats();
-    if (!data.success) return data;
-    const users = (data.users || []).map(u => ({
-      user_uuid: u.user_uuid, username: u.username, email: u.email,
-      single: u.single_listing_scores || 0, bulk: u.bulk_listing_scores || 0, total: u.total_listing_scores || 0,
-      failed: u.listing_scores_failed || 0,
-      last_activity_at_ist: u.last_listing_score_at_ist || null,
-    }));
-    return {
-      success: true,
-      totals: {
-        total_single: data.totals.total_single_listing_scores || 0,
-        total_bulk: data.totals.total_bulk_listing_scores || 0,
-        total: data.totals.total_listing_scores || 0,
-        total_failed: data.totals.total_listing_scores_failed || 0,
-      },
-      users,
-    };
-  },
+  getListingScoresStats: async () => _mapListingCategoryStats(await adminService.getListingStats(), {
+    single: 'single_listing_scores', bulk: 'bulk_listing_scores', total: 'total_listing_scores',
+    failed: 'listing_scores_failed', lastActivity: 'last_listing_score_at_ist',
+    totalsSingle: 'total_single_listing_scores', totalsBulk: 'total_bulk_listing_scores',
+    totalsTotal: 'total_listing_scores', totalsFailed: 'total_listing_scores_failed',
+  }),
 
-  // Transform listing/stats response for listings generated consumers
-  getListingsGeneratedStats: async () => {
-    const data = await adminService.getListingStats();
-    if (!data.success) return data;
-    const users = (data.users || []).map(u => ({
-      user_uuid: u.user_uuid, username: u.username, email: u.email,
-      single: u.listings_generated_single || 0, bulk: u.listings_generated_bulk || 0, total: u.listings_generated || 0,
-      last_activity_at_ist: u.last_listing_at_ist || null,
-    }));
-    return {
-      success: true,
-      totals: {
-        total_single: data.totals.total_listings_generated_single || 0,
-        total_bulk: data.totals.total_listings_generated_bulk || 0,
-        total: data.totals.total_listings_generated || 0,
-      },
-      users,
-    };
-  },
+  getListingsGeneratedStats: async () => _mapListingCategoryStats(await adminService.getListingStats(), {
+    single: 'listings_generated_single', bulk: 'listings_generated_bulk', total: 'listings_generated',
+    lastActivity: 'last_listing_at_ist',
+    totalsSingle: 'total_listings_generated_single', totalsBulk: 'total_listings_generated_bulk',
+    totalsTotal: 'total_listings_generated',
+  }),
 
   // Get a single user's full activity (generations + listing scores + deal tags)
   // Route: GET /api/admin/user/:user_uuid/activity?limit=50 (admin_dashboard module)
-  getUserActivity: async (userUuid, limit = 50) => {
-    if (!userUuid) {
-      throw new Error('userUuid is required');
-    }
-    try {
-      const response = await safeFetch(
-        `${API_BASE_URL}/admin/user/${encodeURIComponent(userUuid)}/activity?limit=${limit}`,
-        createRequestOptions('GET')
-      );
-      return handleResponse(response);
-    } catch (error) {
-      console.error('Error fetching user activity:', error);
-      throw error;
-    }
+  getUserActivity: (userUuid, limit = 50) => {
+    if (!userUuid) throw new Error('userUuid is required');
+    return apiGet(
+      `/admin/user/${encodeURIComponent(userUuid)}/activity?limit=${limit}`,
+      'fetching user activity'
+    );
   },
-
-  // Force refresh of credit requests - to be called manually after approve/reject
-  forceRefreshCreditRequests: async (status = null) => {
-    return adminService.getCreditRequests(status, true);
-  },
-  
-  // Check server connectivity
-  checkConnection: async () => {
-    try {
-      // Use simple fetch without JSON parsing to check connectivity
-      const response = await fetch(`${API_BASE_URL}/health`, {
-        method: 'GET',
-        mode: 'cors',
-        credentials: 'include'
-      });
-      return response.ok;
-    } catch (error) {
-      console.error('Server connection check failed:', error);
-      return false;
-    }
-  },
-  
-  // Get API base URL (useful for debugging)
-  getApiBaseUrl: () => {
-    return API_BASE_URL;
-  }
 };
 
 export default adminService;

@@ -18,7 +18,7 @@ export const getApiBaseUrl = () => {
 
 /**
  * Gets the full API URL for a specific endpoint
- * @param {string} endpoint - The API endpoint (e.g., 'auth/credit_requests')
+ * @param {string} endpoint - The API endpoint (e.g., 'admin/users')
  * @returns {string} The full API URL
  */
 export const getApiUrl = (endpoint = '') => {

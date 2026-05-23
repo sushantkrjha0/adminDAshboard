@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLogin from './components/Admin/AdminLogin';
 import AdminLayout from './components/Admin/AdminLayout';
 import Dashboard from './components/Admin/Dashboard';
-import CreditRequests from './components/Admin/CreditRequests';
 import UserManagement from './components/Admin/UserManagement';
 import UserSignups from './components/Admin/UserSignups';
 import Feedback from './components/Admin/Feedback';
@@ -23,7 +22,6 @@ function App() {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="dashboard" element={<Dashboard />} />
-        <Route path="credit-requests" element={<CreditRequests />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="users/signups" element={<UserSignups />} />
         <Route path="feedback" element={<Feedback />} />

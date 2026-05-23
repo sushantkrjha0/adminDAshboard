@@ -80,9 +80,9 @@ const UserSignups = () => {
     try {
       setIsLoadingSignups(true);
       setError(null);
-      const response = await adminService.getUserSignups(period);
+      const response = await adminService.getAllUsers(period);
       if (response.success) {
-        const validSignups = filterValidSignups(response.signups);
+        const validSignups = filterValidSignups(response.users);
         setSignupsByPeriod(prev => ({ ...prev, [period]: validSignups }));
         setSignupsStats(prev => ({ ...prev, [period]: validSignups.length }));
       }
@@ -99,16 +99,16 @@ const UserSignups = () => {
       setIsLoadingSignups(true);
       setError(null);
       const [dailyRes, weeklyRes, monthlyRes, allRes] = await Promise.all([
-        adminService.getUserSignups('daily'),
-        adminService.getUserSignups('weekly'),
-        adminService.getUserSignups('monthly'),
-        adminService.getUserSignups('all'),
+        adminService.getAllUsers('daily'),
+        adminService.getAllUsers('weekly'),
+        adminService.getAllUsers('monthly'),
+        adminService.getAllUsers('all'),
       ]);
 
-      const validDaily = dailyRes.success ? filterValidSignups(dailyRes.signups) : [];
-      const validWeekly = weeklyRes.success ? filterValidSignups(weeklyRes.signups) : [];
-      const validMonthly = monthlyRes.success ? filterValidSignups(monthlyRes.signups) : [];
-      const validAll = allRes.success ? filterValidSignups(allRes.signups) : [];
+      const validDaily = dailyRes.success ? filterValidSignups(dailyRes.users) : [];
+      const validWeekly = weeklyRes.success ? filterValidSignups(weeklyRes.users) : [];
+      const validMonthly = monthlyRes.success ? filterValidSignups(monthlyRes.users) : [];
+      const validAll = allRes.success ? filterValidSignups(allRes.users) : [];
 
       setSignupsByPeriod({
         daily: validDaily,
@@ -237,9 +237,11 @@ const UserSignups = () => {
             <p>
               {signupsPeriod === 'all'
                 ? 'Every user who has registered to date'
-                : `Users who registered in the last ${
-                    signupsPeriod === 'daily' ? '24 hours' : signupsPeriod === 'weekly' ? '7 days' : '30 days'
-                  }`}
+                : signupsPeriod === 'daily'
+                  ? 'Users who registered today (since 00:00 IST)'
+                  : signupsPeriod === 'weekly'
+                    ? 'Users who registered this week (since Monday 00:00 IST)'
+                    : 'Users who registered this month (since the 1st 00:00 IST)'}
               {'  •  Click any row for full details'}
             </p>
             <div style={{ marginTop: '0.75rem' }}>
