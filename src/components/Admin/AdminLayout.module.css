@@ -3,16 +3,19 @@
   display: flex;
   min-height: 100vh;
   background: #f7fafc;
+  overflow-x: hidden;
 }
 
 /* Main Content Area */
 .mainContent {
   flex: 1;
+  min-width: 0;
   margin-left: 0;
   transition: margin-left 0.3s ease;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 /* Top Navigation Bar */
@@ -118,7 +121,7 @@
 /* Responsive Design */
 @media (min-width: 769px) {
   .mainContent {
-    margin-left: 280px; /* Match sidebar width */
+    margin-left: 200px; /* Match sidebar width */
   }
   
   .menuButton {

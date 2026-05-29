@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   FaUserPlus,
   FaSpinner,
@@ -16,7 +16,9 @@ import {
   FaMapMarkerAlt,
   FaUserTag,
   FaIdBadge,
+  FaFileExcel,
 } from 'react-icons/fa';
+import * as XLSX from 'xlsx';
 import styles from './UserSignups.module.css';
 import adminService from '../../services/adminService';
 import Pagination, { usePagination } from './Pagination';
@@ -34,6 +36,16 @@ const formatDate = (dateString) => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   } catch {
     return dateString;
+  }
+};
+
+const formatDateParts = (dateString) => {
+  if (dateString === 'N/A' || !dateString) return { date: 'N/A', time: '' };
+  try {
+    const d = new Date(dateString);
+    return { date: d.toLocaleDateString(), time: d.toLocaleTimeString() };
+  } catch {
+    return { date: dateString, time: '' };
   }
 };
 
@@ -55,6 +67,7 @@ const UserSignups = () => {
   const [error, setError] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUuids, setSelectedUuids] = useState(() => new Set());
   const isInitialMount = useRef(true);
 
   // On mount: fetch all three period buckets in parallel
@@ -132,11 +145,72 @@ const UserSignups = () => {
 
   const handlePeriodChange = (period) => {
     setSignupsPeriod(period);
+    setSelectedUuids(new Set());
   };
 
   const signups = signupsByPeriod[signupsPeriod] || [];
   const filteredSignups = filterByUserSearch(signups, searchQuery);
   const { pageItems: pagedSignups, page, setPage, totalPages, total } = usePagination(filteredSignups);
+
+  const filteredUuids = useMemo(
+    () => filteredSignups.map((u) => u.user_uuid),
+    [filteredSignups]
+  );
+  const allFilteredSelected =
+    filteredUuids.length > 0 && filteredUuids.every((id) => selectedUuids.has(id));
+
+  const toggleSelectOne = (uuid) => {
+    setSelectedUuids((prev) => {
+      const next = new Set(prev);
+      if (next.has(uuid)) next.delete(uuid);
+      else next.add(uuid);
+      return next;
+    });
+  };
+
+  const toggleSelectAllFiltered = () => {
+    setSelectedUuids((prev) => {
+      const next = new Set(prev);
+      if (allFilteredSelected) {
+        filteredUuids.forEach((id) => next.delete(id));
+      } else {
+        filteredUuids.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const downloadSelectedAsExcel = () => {
+    const selectedRows = signups.filter((u) => selectedUuids.has(u.user_uuid));
+    if (selectedRows.length === 0) return;
+
+    const data = selectedRows.map((u) => ({
+      Username: u.username || '',
+      Email: u.email || '',
+      'Phone Number': u.phone_number || '',
+      'Signup Date': formatDate(u.created_at),
+      'Signup Method': u.signup_method === 'google' ? 'Google' : 'Email',
+      'Amazon Connected': u.amazon_status ? 'Yes' : 'No',
+      'Amazon Store Name': u.amazon_store_name || '',
+      'Amazon Seller ID': u.amazon_seller_id || '',
+      'Amazon Product Count': u.amazon_product_count ?? 0,
+      'Onboarding Complete': u.onboarding_complete ? 'Yes' : 'No',
+      'Account Type': u.account_type || u.user_type || '',
+      'Current Credits': u.current_credits ?? 0,
+      Company: u.company_name || '',
+      'Job Title': u.job_title || '',
+      Location: u.location || '',
+      Experience: u.experience || '',
+      'Agency Size': u.agency_size || '',
+      'User UUID': u.user_uuid || '',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Signups');
+    const stamp = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(workbook, `user-signups-${signupsPeriod}-${stamp}.xlsx`);
+  };
 
   return (
     <div className={styles.container}>
@@ -244,16 +318,40 @@ const UserSignups = () => {
                     : 'Users who registered this month (since the 1st 00:00 IST)'}
               {'  •  Click any row for full details'}
             </p>
-            <div style={{ marginTop: '0.75rem' }}>
+            <div className={styles.toolbarRow}>
               <SearchInput value={searchQuery} onChange={setSearchQuery} />
+              <div className={styles.toolbarActions}>
+                <span className={styles.selectionCount}>
+                  {selectedUuids.size} selected
+                </span>
+                <button
+                  type="button"
+                  className={styles.downloadButton}
+                  onClick={downloadSelectedAsExcel}
+                  disabled={selectedUuids.size === 0}
+                  title="Download selected users as Excel"
+                >
+                  <FaFileExcel className={styles.badgeIcon} />
+                  Download Excel
+                </button>
+              </div>
             </div>
           </div>
           <table className={styles.usersTable}>
             <thead>
               <tr>
+                <th className={styles.checkboxCell}>
+                  <input
+                    type="checkbox"
+                    checked={allFilteredSelected}
+                    onChange={toggleSelectAllFiltered}
+                    aria-label="Select all"
+                  />
+                </th>
                 <th>Username</th>
                 <th>Email</th>
-                <th>Phone Number</th>
+                <th>Phone</th>
+                <th>Company</th>
                 <th>Signup Date</th>
                 <th>Method</th>
                 <th>Amazon</th>
@@ -267,16 +365,38 @@ const UserSignups = () => {
                   className={`${styles.userRow} ${styles.clickableRow}`}
                   onClick={() => setSelectedUser(user)}
                 >
+                  <td
+                    className={styles.checkboxCell}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedUuids.has(user.user_uuid)}
+                      onChange={() => toggleSelectOne(user.user_uuid)}
+                      aria-label={`Select ${user.username}`}
+                    />
+                  </td>
                   <td className={styles.userCell}>
                     <span className={styles.username}>{user.username}</span>
                   </td>
-                  <td><span className={styles.email}>{user.email}</span></td>
+                  <td><span className={styles.email} title={user.email}>{user.email}</span></td>
                   <td>
                     <span className={styles.phoneNumber}>{user.phone_number || 'N/A'}</span>
                   </td>
+                  <td className={styles.wrapCell}><div>{user.company_name || 'N/A'}</div></td>
                   <td>
-                    <FaClock className={styles.inlineIcon} />
-                    {formatDate(user.created_at)}
+                    {(() => {
+                      const { date, time } = formatDateParts(user.created_at);
+                      return (
+                        <div className={styles.dateCell}>
+                          <FaClock className={styles.inlineIcon} />
+                          <div className={styles.dateLines}>
+                            <span>{date}</span>
+                            {time && <span>{time}</span>}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td>
                     {user.signup_method === 'google' ? (
