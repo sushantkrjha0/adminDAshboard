@@ -219,6 +219,65 @@ const adminService = {
       'fetching user activity'
     );
   },
+
+  // --- Support tickets (admin endpoints live under /api/support-tickets/admin) ---
+  getAllSupportTickets: (status = null, category = null) => {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (category) params.set('category', category);
+    const qs = params.toString();
+    return apiGet(`/support-tickets/admin/all${qs ? `?${qs}` : ''}`, 'fetching support tickets');
+  },
+
+  getSupportTicket: (ticketId) => {
+    if (!ticketId) throw new Error('ticketId is required');
+    return apiGet(`/support-tickets/admin/${encodeURIComponent(ticketId)}`, 'fetching support ticket');
+  },
+
+  // Send an admin reply. Accepts optional attachments (File[]); uses FormData when
+  // attachments are present, otherwise sends JSON.
+  replyToSupportTicket: async (ticketId, message, attachments = []) => {
+    if (!ticketId) throw new Error('ticketId is required');
+    const adminName = localStorage.getItem('adminEmail') || 'Support';
+    const userUuid = localStorage.getItem('userUuid') || '';
+    const url = `${API_BASE_URL}/support-tickets/admin/${encodeURIComponent(ticketId)}/messages`;
+    try {
+      let res;
+      if (attachments && attachments.length) {
+        const fd = new FormData();
+        fd.append('message', message);
+        fd.append('admin_name', adminName);
+        attachments.forEach(f => fd.append('attachments', f));
+        res = await safeFetch(url, {
+          method: 'POST',
+          headers: { 'X-User-UUID': userUuid },
+          credentials: 'include',
+          mode: 'cors',
+          body: fd,
+        });
+      } else {
+        res = await safeFetch(url, createRequestOptions('POST', { message, admin_name: adminName }));
+      }
+      return await handleResponse(res);
+    } catch (error) {
+      console.error('Error replying to ticket:', error);
+      throw error;
+    }
+  },
+
+  updateSupportTicketStatus: async (ticketId, status) => {
+    if (!ticketId) throw new Error('ticketId is required');
+    try {
+      const res = await safeFetch(
+        `${API_BASE_URL}/support-tickets/admin/${encodeURIComponent(ticketId)}/status`,
+        createRequestOptions('POST', { status })
+      );
+      return await handleResponse(res);
+    } catch (error) {
+      console.error('Error updating ticket status:', error);
+      throw error;
+    }
+  },
 };
 
 export default adminService;

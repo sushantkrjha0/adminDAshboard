@@ -11,6 +11,7 @@ import Listing from './components/Admin/Listing';
 import DealTags from './components/Admin/DealTags';
 import ListingScore from './components/Admin/ListingScore';
 import GeneratedListing from './components/Admin/GeneratedListing';
+import SupportTickets from './components/Admin/SupportTickets';
 import { setupAxiosInterceptors } from './utils/auth';
 import './App.css';
 
@@ -30,6 +31,7 @@ function App() {
         <Route path="listing/deal-tags" element={<DealTags />} />
         <Route path="listing/listing-score" element={<ListingScore />} />
         <Route path="listing/generated-listing" element={<GeneratedListing />} />
+        <Route path="support-tickets" element={<SupportTickets />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
 

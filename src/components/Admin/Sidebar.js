@@ -13,7 +13,8 @@ import {
   FaListAlt,
   FaTag,
   FaStar,
-  FaFileAlt
+  FaFileAlt,
+  FaTicketAlt
 } from 'react-icons/fa';
 import { logout } from '../../utils/auth';
 import styles from './Sidebar.module.css';
@@ -90,6 +91,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       icon: <FaShareAlt />,
       path: '/admin/referrals',
       description: 'View and manage user referrals'
+    },
+    {
+      id: 'support-tickets',
+      label: 'Support Tickets',
+      icon: <FaTicketAlt />,
+      path: '/admin/support-tickets',
+      description: 'View and respond to user support tickets'
     },
     {
       id: 'settings',
