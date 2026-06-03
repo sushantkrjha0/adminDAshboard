@@ -20,7 +20,14 @@ const STATUS_PILL = {
 
 const formatTime = (iso) => {
   if (!iso) return '';
-  try { return new Date(iso).toLocaleString(); } catch { return iso; }
+  try {
+    return new Date(iso).toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false,
+    }) + ' IST';
+  } catch { return iso; }
 };
 
 const StatusPill = ({ status }) => {
