@@ -5,32 +5,47 @@ const API_BASE_URL = getApiBaseUrl();
 
 // Helper function to create consistent request options with CORS support
 const createRequestOptions = (method, body = null) => {
-  const userUuid = localStorage.getItem('userUuid');
-  
+  const token = localStorage.getItem('adminToken');
+
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const options = {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-User-UUID': userUuid || ''
-    },
-    credentials: 'include', // Include cookies if your API uses them
-    mode: 'cors' // Explicitly set CORS mode
+    headers,
+    credentials: 'include',
+    mode: 'cors',
   };
-  
+
   if (body) {
     options.body = JSON.stringify(body);
   }
-  
+
   return options;
 };
 
 // Helper function to handle fetch responses with better error handling
 const handleResponse = async (response) => {
+  // Auto-logout on 401 (expired/invalid admin token)
+  if (response.status === 401) {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminEmail');
+    localStorage.removeItem('userUuid');
+    if (typeof window !== 'undefined' && !window.location.pathname.includes('/admin/login')) {
+      window.location.href = '/admin/login';
+    }
+    return Promise.reject('Session expired. Please log in again.');
+  }
+
   // Check if response is ok before trying to parse JSON
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
     let errorMessage;
-    
+
     try {
       const errorData = JSON.parse(errorText);
       errorMessage = (errorData && errorData.message) || response.statusText;
@@ -38,7 +53,7 @@ const handleResponse = async (response) => {
       // If JSON parsing fails, use the raw text
       errorMessage = errorText || response.statusText || `HTTP error ${response.status}`;
     }
-    
+
     return Promise.reject(errorMessage);
   }
   

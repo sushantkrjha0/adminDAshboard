@@ -1,28 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaLock, FaUser, FaSignInAlt } from 'react-icons/fa';
-import axios from 'axios';
+import { login, isAuthenticated } from '../../utils/auth';
 import '../../App.css';
-
-// Email-password pairs with corresponding UUIDs
-const AUTHORIZED_CREDENTIALS = {
-  'naveen@ecombuddha.in': {
-    password: 'Naveen@123',
-    uuid: 'd1633d8a-00a1-7073-16e2-d2805d998a9f'
-  },
-  'sahaj005@gmail.com': {
-    password: 'Sahaj@123',
-    uuid: 'a113fd5a-1011-7063-3cf9-7ac0110aafe4'
-  },
-  'sushant@ecombuddha.in': {
-    password: 'Sushant@123',
-    uuid: '71b3fd3a-f011-70ed-07f8-d327ee3c7749'
-  },
-  'harshita@ecombuddha.in': {
-    password: 'Harshita@123',
-    uuid: '41331d0a-2001-7041-f1e8-dc538b4c4707'
-  }
-};
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -31,14 +11,9 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Auto-login if token is already stored
+  // Auto-redirect if already authenticated
   useEffect(() => {
-    const adminToken = localStorage.getItem('adminToken');
-    const userUuid = localStorage.getItem('userUuid');
-    
-    if (adminToken && userUuid) {
-      // Configure axios headers with the stored UUID
-      axios.defaults.headers.common['X-User-UUID'] = userUuid;
+    if (isAuthenticated()) {
       navigate('/admin/dashboard');
     }
   }, [navigate]);
@@ -48,42 +23,11 @@ const AdminLogin = () => {
     setIsLoading(true);
     setError(null);
 
-    const lowerEmail = email.toLowerCase();
-    const userCredentials = AUTHORIZED_CREDENTIALS[lowerEmail];
-
-    if (!userCredentials) {
-      setError('Unauthorized email address.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (password !== userCredentials.password) {
-      setError('Invalid password.');
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      // Create admin info object
-      const adminInfo = {
-        email: lowerEmail,
-        role: 'admin',
-        loginTime: new Date().toISOString()
-      };
-      
-      // Store admin info and UUID separately
-      localStorage.setItem('adminToken', JSON.stringify(adminInfo));
-      localStorage.setItem('adminEmail', lowerEmail);
-      localStorage.setItem('userUuid', userCredentials.uuid);
-      
-      // Set UUID in axios default headers for all future requests
-      axios.defaults.headers.common['X-User-UUID'] = userCredentials.uuid;
-      
-      // Redirect to admin dashboard
+      await login(email, password);
       navigate('/admin');
-    } catch (error) {
-      console.error('Login error:', error);
-      setError('An error occurred during login. Please try again.');
+    } catch (err) {
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

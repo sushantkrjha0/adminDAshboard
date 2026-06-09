@@ -2,26 +2,6 @@
 import axios from 'axios';
 import { getApiBaseUrl } from './apiConfig';
 
-// User credentials with their UUIDs
-const AUTHORIZED_USERS = {
-  'naveen@ecombuddha.in': {
-    password: 'Naveen@123',
-    uuid: 'd1633d8a-00a1-7073-16e2-d2805d998a9f'
-  },
-  'sahaj005@gmail.com': {
-    password: 'Sahaj@123',
-    uuid: 'a113fd5a-1011-7063-3cf9-7ac0110aafe4'
-  },
-  'sushant@ecombuddha.in': {
-    password: 'Sushant@123',
-    uuid: '71b3fd3a-f011-70ed-07f8-d327ee3c7749'
-  },
-  'harshita@ecombuddha.in': {
-    password: 'Harshita@123',
-    uuid: '41331d0a-2001-7041-f1e8-dc538b4c4707'
-  }
-};
-
 // Setup API URL
 export const getApiUrl = () => {
   return getApiBaseUrl();
@@ -29,32 +9,20 @@ export const getApiUrl = () => {
 
 // Setup auth headers for all requests
 export const setupAxiosInterceptors = () => {
-  // Add request interceptor to include auth headers for all requests
   axios.interceptors.request.use(
     (config) => {
       const token = localStorage.getItem('adminToken');
-      const userUuid = localStorage.getItem('userUuid');
-      
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
       }
-      
-      if (userUuid) {
-        config.headers['X-User-UUID'] = userUuid;
-      }
-      
       return config;
     },
-    (error) => {
-      return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
   );
-  
-  // Add response interceptor to handle auth errors
+
   axios.interceptors.response.use(
     (response) => response,
     (error) => {
-      // If 401 Unauthorized, log out the user
       if (error.response && error.response.status === 401) {
         logout();
         window.location.href = '/admin/login';
@@ -64,42 +32,27 @@ export const setupAxiosInterceptors = () => {
   );
 };
 
-// Login function
-export const login = (email, password) => {
-  // Check if user exists and password is correct
+// Login: backend verifies password, returns signed JWT
+export const login = async (email, password) => {
+  const API_URL = getApiUrl();
   const lowerEmail = email.toLowerCase();
-  const userCredentials = AUTHORIZED_USERS[lowerEmail];
-  
-  if (!userCredentials) {
-    return Promise.reject(new Error('Unauthorized email address'));
-  }
-  
-  if (password !== userCredentials.password) {
-    return Promise.reject(new Error('Invalid password'));
-  }
-  
-  // Create admin info
-  const adminInfo = {
-    email: lowerEmail,
-    role: 'admin',
-    loginTime: new Date().toISOString()
-  };
-  
-  // Store authentication data
-  localStorage.setItem('adminToken', JSON.stringify(adminInfo));
-  localStorage.setItem('adminEmail', lowerEmail);
-  localStorage.setItem('userUuid', userCredentials.uuid);
-  
-  // Set UUID in axios default headers for all future requests
-  axios.defaults.headers.common['X-User-UUID'] = userCredentials.uuid;
-  
-  return Promise.resolve({ 
-    user: {
+
+  try {
+    const response = await axios.post(`${API_URL}/admin/login`, {
       email: lowerEmail,
-      role: 'admin',
-      uuid: userCredentials.uuid
-    }
-  });
+      password: password,
+    });
+
+    const { token, user } = response.data;
+    localStorage.setItem('adminToken', token);
+    localStorage.setItem('adminEmail', user.email);
+    localStorage.setItem('userUuid', user.uuid);
+
+    return { user };
+  } catch (err) {
+    const msg = err.response?.data?.error || 'Login failed';
+    throw new Error(msg);
+  }
 };
 
 // Logout function
@@ -118,31 +71,21 @@ export const isAuthenticated = () => {
   return !!token && !!userUuid;
 };
 
-// Get current user info
+// Get current user info from localStorage
 export const getCurrentUser = () => {
   const token = localStorage.getItem('adminToken');
   const email = localStorage.getItem('adminEmail');
   const userUuid = localStorage.getItem('userUuid');
-  
+
   if (!token || !email || !userUuid) {
     return null;
   }
-  
-  try {
-    // Parse the token if it's a JSON string
-    const userData = typeof token === 'string' && token.startsWith('{') 
-      ? JSON.parse(token) 
-      : { email, role: 'admin' };
-      
-    return {
-      ...userData,
-      uuid: userUuid,
-      email: email
-    };
-  } catch (e) {
-    console.error('Error parsing user data:', e);
-    return null;
-  }
+
+  return {
+    email,
+    uuid: userUuid,
+    role: 'admin',
+  };
 };
 
 // API request helpers that include authorization headers
